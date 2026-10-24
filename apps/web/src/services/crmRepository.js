@@ -75,6 +75,26 @@ const entityMap = {
   },
 };
 
+entityMap['/acquisition/contacts'] = entityMap['/crm/contacts'];
+entityMap['/acquisition/review'] = {
+  ...entityMap['/crm/leads'],
+  select:['lead_number','company_name','lead_source','score','enrichment_status','status'],
+  labels:['线索编号','候选公司','来源','评分','证据状态','审核状态'],
+  map:(record)=>[record.lead_number,record.company_name,record.lead_source,record.score??'—',record.enrichment_status,record.status],
+};
+entityMap['/acquisition/scoring'] = {
+  ...entityMap['/crm/leads'],
+  select:['lead_number','company_name','score','enrichment_status','source_detail','status'],
+  labels:['线索编号','候选公司','评分','证据状态','证据来源','审核状态'],
+  map:(record)=>[record.lead_number,record.company_name,record.score??'—',record.enrichment_status,record.source_detail||'—',record.status],
+};
+entityMap['/acquisition/research'] = {
+  ...entityMap['/crm/leads'],
+  select:['lead_number','company_name','website','enrichment_status','source_detail','created_at'],
+  labels:['线索编号','候选公司','企业网站','研究状态','来源 URL','发现时间'],
+  map:(record)=>[record.lead_number,record.company_name,record.website||'—',record.enrichment_status,record.source_detail||'—',record.created_at ? new Date(record.created_at).toLocaleDateString() : '—'],
+};
+
 const displayValue = (key,value) => {
   if (value === null || value === undefined || value === '') return '—';
   if (key === 'amount' || key === 'total_amount') return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(value));
