@@ -6,6 +6,7 @@ import {
 import { Button, TextInput } from '@carbon/react';
 import './workspace.scss';
 import AcquisitionPage from './AcquisitionPage.jsx';
+import BusinessModulePage from './BusinessModulePage.jsx';
 import { astrionNavigation } from './navigation/astrion-navigation.js';
 
 
@@ -127,37 +128,7 @@ export default function Workspace() {
     </div>}
 
     <main className={`astrion-main ${sidebarOpen ? '' : 'is-wide'}`}>
-      {path.startsWith('/acquisition') ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <>
-        <div className="astrion-breadcrumb"><span>工作空间</span><span>/</span><strong>{current.label}</strong></div>
-        <div className="astrion-page-heading">
-          <div><h1>{current.label}</h1><p>统一管理 Astrion 的获客、客户关系与销售流程。</p></div>
-          <Button renderIcon={Add} onClick={() => setNotice('创建操作将在对应业务模块接入后启用。')}>新建</Button>
-        </div>
-        {notice && <div className="astrion-notice" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="关闭提示"><Close size={16} /></button></div>}
-        <section className="astrion-stat-grid" aria-label="工作概览">
-          <article className="astrion-stat-card"><span>新增线索</span><strong>128</strong><small>演示数据</small></article>
-          <article className="astrion-stat-card"><span>进行中商机</span><strong>36</strong><small>演示数据</small></article>
-          <article className="astrion-stat-card"><span>待处理任务</span><strong>14</strong><small>演示数据</small></article>
-          <article className="astrion-stat-card"><span>本月订单</span><strong>52</strong><small>演示数据</small></article>
-        </section>
-        <section className="astrion-content-card">
-          <div className="astrion-card-title"><div><h2>快捷入口</h2><p>选择一个模块继续工作</p></div><Grid size={20} /></div>
-          <div className="astrion-shortcuts">
-            {[
-              { label: '线索发现', description: '探索并整理潜在客户', path: '/acquisition/discovery', Icon: MagicWand },
-              { label: '客户管理', description: '维护联系人与公司资料', path: '/crm/leads', Icon: UserMultiple },
-              { label: '商机看板', description: '跟踪销售阶段与进度', path: '/sales/board', Icon: Bullseye },
-              { label: '分析报表', description: '查看漏斗与业务表现', path: '/analytics', Icon: ChartLine },
-            ].map(({ label, description, path: shortcutPath, Icon }) => <button className="astrion-shortcut" key={shortcutPath} onClick={() => navigate(shortcutPath)}>
-              <Icon size={24} /><span><strong>{label}</strong><small>{description}</small></span><ArrowRight size={18} />
-            </button>)}
-          </div>
-        </section>
-        <section className="astrion-content-card astrion-flow-card">
-          <div className="astrion-card-title"><div><h2>业务流程</h2><p>从线索到订单的主要流程</p></div><Launch size={20} /></div>
-          <div className="astrion-flow"><span>AI 获客</span><ArrowRight size={16}/><span>线索</span><ArrowRight size={16}/><span>客户</span><ArrowRight size={16}/><span>商机</span><ArrowRight size={16}/><span>报价</span><ArrowRight size={16}/><span>订单</span></div>
-        </section>
-      </>}
+      {path.startsWith('/acquisition') ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <BusinessModulePage path={path} navigate={navigate} setNotice={setNotice} notice={notice} />}
     </main>
 
     {searchOpen && <div className="astrion-search-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setSearchOpen(false); }}>
