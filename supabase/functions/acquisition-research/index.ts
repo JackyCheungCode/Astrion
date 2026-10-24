@@ -13,18 +13,28 @@ type SearchResult = {
   domain: string;
 };
 
-const APP_ORIGIN = Deno.env.get("APP_ORIGIN") ?? "http://localhost:5173";
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": APP_ORIGIN,
-  "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin",
-};
+const DEFAULT_APP_ORIGIN = Deno.env.get("APP_ORIGIN") ?? "http://localhost:5173";
+const ALLOWED_APP_ORIGINS = new Set(
+  (Deno.env.get("APP_ORIGINS") ?? DEFAULT_APP_ORIGIN)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean),
+);
 
-function jsonResponse(body: unknown, status = 200) {
+function corsHeaders(origin?: string | null) {
+  const responseOrigin = origin && ALLOWED_APP_ORIGINS.has(origin) ? origin : DEFAULT_APP_ORIGIN;
+  return {
+    "Access-Control-Allow-Origin": responseOrigin,
+    "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
+
+function jsonResponse(body: unknown, status = 200, origin?: string | null) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(origin), "Content-Type": "application/json" },
   });
 }
 
@@ -164,16 +174,17 @@ const isNonCompanyDomain = (domain: string) =>
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
-  if (origin && origin !== APP_ORIGIN) return jsonResponse({ error: "Origin is not allowed" }, 403);
-  if (request.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
-  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+  const respond = (body: unknown, status = 200) => jsonResponse(body, status, origin);
+  if (origin && !ALLOWED_APP_ORIGINS.has(origin)) return respond({ error: "Origin is not allowed" }, 403);
+  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
+  if (request.method !== "POST") return respond({ error: "Method not allowed" }, 405);
 
   const authorization = request.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) return jsonResponse({ error: "Authentication required" }, 401);
+  if (!authorization?.startsWith("Bearer ")) return respond({ error: "Authentication required" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !anonKey) return jsonResponse({ error: "Supabase function environment is incomplete" }, 500);
+  if (!supabaseUrl || !anonKey) return respond({ error: "Supabase function environment is incomplete" }, 500);
 
   const supabase = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authorization } },
@@ -181,24 +192,24 @@ Deno.serve(async (request) => {
   });
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return jsonResponse({ error: "Invalid or expired session" }, 401);
+  if (userError || !userData.user) return respond({ error: "Invalid or expired session" }, 401);
   const user = userData.user;
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return jsonResponse({ error: "A JSON request body is required" }, 400);
+    return respond({ error: "A JSON request body is required" }, 400);
   }
 
   const query = typeof body.query === "string" ? body.query.trim() : "";
   if (query.length < 3 || query.length > 400) {
-    return jsonResponse({ error: "Search query must contain 3–400 characters" }, 400);
+    return respond({ error: "Search query must contain 3–400 characters" }, 400);
   }
 
   const requested = Array.isArray(body.providers) ? body.providers : ["serper", "tavily"];
   const providers = [...new Set(requested.filter((provider): provider is ProviderName => provider === "serper" || provider === "tavily"))];
-  if (!providers.length) return jsonResponse({ error: "Choose Serper, Tavily, or both providers" }, 400);
+  if (!providers.length) return respond({ error: "Choose Serper, Tavily, or both providers" }, 400);
   const maxResults = Math.min(10, Math.max(1, Number.isFinite(Number(body.maxResults)) ? Math.floor(Number(body.maxResults)) : 10));
   const persistCandidates = body.persistCandidates === true;
   const scoreEvidence = body.scoreEvidence !== false;
@@ -206,7 +217,7 @@ Deno.serve(async (request) => {
 
   const requestedWorkspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
   if (requestedWorkspaceId.length > 100) {
-    return jsonResponse({ error: "Invalid workspace selection" }, 400);
+    return respond({ error: "Invalid workspace selection" }, 400);
   }
 
   const { data: memberships, error: membershipError } = await supabase
@@ -215,12 +226,12 @@ Deno.serve(async (request) => {
     .eq("user_id", user.id)
     .eq("is_active", true)
     .limit(1000);
-  if (membershipError) return jsonResponse({ error: "Could not verify workspace membership" }, 403);
-  if (!memberships?.length) return jsonResponse({ error: "This user is not a member of a workspace" }, 403);
+  if (membershipError) return respond({ error: "Could not verify workspace membership" }, 403);
+  if (!memberships?.length) return respond({ error: "This user is not a member of a workspace" }, 403);
 
   const workspaceResolution = resolveActiveWorkspace(memberships, requestedWorkspaceId);
   if (!workspaceResolution.ok) {
-    return jsonResponse({
+    return respond({
       error: workspaceResolution.reason === "not_member"
         ? "The selected workspace is not an active membership for this user"
         : "Workspace selection is required before searching",
@@ -229,7 +240,7 @@ Deno.serve(async (request) => {
 
   const { workspace_id: workspaceId, role_key: role } = workspaceResolution.membership;
   if (persistCandidates && !["owner", "admin", "sales_manager", "sales_rep", "marketing"].includes(role)) {
-    return jsonResponse({ error: "Your workspace role cannot create lead records" }, 403);
+    return respond({ error: "Your workspace role cannot create lead records" }, 403);
   }
 
   const queryHash = await sha256Hex(query.toLowerCase().replace(/\\s+/g, " "));
@@ -241,7 +252,7 @@ Deno.serve(async (request) => {
   });
   if (reserveError || !requestId) {
     const rateLimited = reserveError?.code === "P0001" || reserveError?.message?.toLowerCase().includes("rate limit");
-    return jsonResponse({ error: rateLimited ? "Search rate limit reached. Please retry after the one-hour window." : "Unable to reserve an acquisition request for this workspace." }, rateLimited ? 429 : 403);
+    return respond({ error: rateLimited ? "Search rate limit reached. Please retry after the one-hour window." : "Unable to reserve an acquisition request for this workspace." }, rateLimited ? 429 : 403);
   }
 
   const providerStatuses: Array<Record<string, unknown>> = [];
@@ -363,7 +374,7 @@ Deno.serve(async (request) => {
     p_persisted_count: persistedCount,
   });
 
-  return jsonResponse({
+  return respond({
     query,
     providers: providerStatuses,
     results: results.slice(0, maxResults * 2),
