@@ -3,7 +3,7 @@ import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
 } from '@carbon/icons-react';
-import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured } from './services/crmRepository.js';
+import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder } from './services/crmRepository.js';
 import {
   Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
@@ -52,9 +52,9 @@ function GenericTable({ config, onCreate }) {
   const [pageSize,setPageSize] = useState(10);
   const columns = config.columns || defaultColumns;
   const rows = config.rows || defaultRows;
-  const filtered = rows.filter((row) => row.join(' ').toLowerCase().includes(query.toLowerCase()) && (status === 'all' || row.some((cell) => cell === status)));
+  const filtered = rows.map((row,sourceIndex)=>({row,sourceIndex,recordId:config.recordIds?.[sourceIndex]})).filter(({row}) => row.join(' ').toLowerCase().includes(query.toLowerCase()) && (status === 'all' || row.some((cell) => cell === status)));
   const headers = columns.map((header,key) => ({key,header}));
-  const dataRows = filtered.map((row,i) => ({id:String(i),...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
+  const dataRows = filtered.map(({row,sourceIndex,recordId},i) => ({id:recordId||String(i),...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
   return <TableContainer className="bm-table-container" title="">
     <TableToolbar><TableToolbarContent>
       <TableToolbarSearch persistent value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索当前列表" />
@@ -66,7 +66,7 @@ function GenericTable({ config, onCreate }) {
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
       <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
-      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onCreate(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="记录操作" onClick={()=>onCreate(row)}/></TableCell></TableRow>)}</TableBody>
+      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onCreate(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><div className="bm-row-actions">{config.path==='/crm/leads'&&config.isPersistent&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转化</Button>}{config.path==='/sales/quotes'&&config.isPersistent&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转订单</Button>}<Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="记录操作" onClick={()=>onCreate(row)}/></div></TableCell></TableRow>)}</TableBody>
     </Table>
     <div className="bm-table-footer"><span>显示 {filtered.length} 条记录 · {config.isPersistent ? '数据库数据' : '演示数据'}</span><Pagination pageSizes={[5,10,20]} pageSize={pageSize} totalItems={filtered.length} onChange={({pageSize:nextSize})=>setPageSize(nextSize)} /></div>
   </TableContainer>;
@@ -186,6 +186,14 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
   const [persistentError,setPersistentError] = useState('');
   const [loadingRecords,setLoadingRecords] = useState(false);
   const persistentSupported = supportsPersistentRecords(path);
+  const reloadPersistentRecords = async () => { const result = await listCrmRecords(path); setPersistentConfig(result); setPersistentError(''); };
+  const handleConvert = async (recordId) => {
+    try {
+      if (path === '/crm/leads') { await convertLeadToAccount(recordId); setNotice('线索已通过原子业务事务转化为客户账户与联系人。'); }
+      else if (path === '/sales/quotes') { await convertQuoteToOrder(recordId); setNotice('报价已通过原子业务事务转化为销售订单。'); }
+      await reloadPersistentRecords();
+    } catch (error) { setNotice(error?.message || '业务转化失败，请检查状态、权限和数据库迁移。'); }
+  };
   useEffect(() => {
     let active = true;
     if (!persistentSupported || !supabaseConfigured) {
@@ -235,7 +243,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
     {config.settings&&<SettingsPanel type="workspace"/>}
     {path==='/settings/users'&&<SettingsPanel type="users"/>}
     {config.integrations&&<SettingsPanel type="integrations"/>}
-    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={()=>setNotice('当前列表已刷新演示数据。')}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig)}} onCreate={(row)=>{setDraft((prev)=>({...prev,name:row?.['1']||row?.[1]||''}));setCreateOpen(true);}}/></>}
+    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={()=>setNotice('当前列表已刷新演示数据。')}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds}} onConvert={handleConvert} onCreate={(row)=>{setDraft((prev)=>({...prev,name:row?.['1']||row?.[1]||''}));setCreateOpen(true);}}/></>}
     <div className="bm-page-foot"><span><DataBase size={14}/> Astrion 元数据驱动业务界面</span><span>当前为前端原型 · 真实持久化、权限校验与服务端 API 尚未连接</span></div>
     <Modal open={createOpen} modalHeading="新建业务记录" primaryButtonText="保存草稿" secondaryButtonText="取消" onRequestClose={()=>setCreateOpen(false)} onRequestSubmit={saveDraft} size="md">
       <div className="bm-create-form"><TextInput id="bm-record-name" labelText="记录名称" value={draft.name} onChange={(e)=>setDraft((prev)=>({...prev,name:e.target.value}))} placeholder="输入名称"/><Select id="bm-record-type" labelText="记录类型" value={draft.type} onChange={(e)=>setDraft((prev)=>({...prev,type:e.target.value}))}><SelectItem value="standard" text="标准记录"/><SelectItem value="strategic" text="战略客户"/><SelectItem value="qualified" text="已资格审核"/><SelectItem value="partner" text="合作伙伴"/></Select><Select id="bm-record-owner" labelText="负责人" value={draft.owner} onChange={(e)=>setDraft((prev)=>({...prev,owner:e.target.value}))}><SelectItem value="team-a" text="销售团队 A"/><SelectItem value="team-b" text="销售团队 B"/><SelectItem value="marketing" text="营销运营"/><SelectItem value="system" text="系统管理员"/></Select><Select id="bm-record-status" labelText="状态" value={draft.status} onChange={(e)=>setDraft((prev)=>({...prev,status:e.target.value}))}><SelectItem value="new" text="新建"/><SelectItem value="review" text="待审核"/><SelectItem value="active" text="有效"/><SelectItem value="paused" text="暂停"/></Select><InlineNotification kind="info" lowContrast title="草稿模式" subtitle="此操作仅更新当前页面状态，不会写入数据库。"/></div>
