@@ -69,7 +69,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - Added a Supabase sign-in gate when environment variables are configured; without those variables the app remains in clearly labeled demo mode.
 - Added a workspace-scoped repository adapter for list/create operations on accounts, contacts, leads, opportunities, quotes, and sales orders. Lead conversion and accepted-quote-to-order actions call atomic database functions. Multi-workspace users are blocked until a workspace switcher exists.
 - Custom-field definitions can be listed/created/deleted through the workspace metadata API when the signed-in role is authorized. Field value persistence, dynamic validation, edit/delete for ordinary records, pagination, and relationship hydration remain incomplete.
-- [x] GitHub Actions web build and Deno Edge Function type-check passed; local Supabase applied migrations 00100–00190 and the 52 pgTAP assertions passed.
+- [x] GitHub Actions web build and Deno Edge Function type-check passed; migrations 00100–00190 and the original 52 pgTAP assertions passed before adding acquisition metering.
 
 
 ## CRM foundation progress — 2026-10-24
@@ -78,7 +78,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add indexes for common workspace-scoped lookup, ownership, funnel, activity, and audit queries.
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
 - [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
-- [x] Add Supabase local configuration and 55 schema/RLS/transaction/usage smoke assertions; the suite passed in GitHub Actions.
+- [x] Add Supabase local configuration and 55 schema/RLS/transaction/usage smoke assertions.
+- [ ] Re-run the database suite after migration 00200 adds acquisition usage metering.
 - [ ] Add representative tenant seed data and deeper role-boundary tests.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
@@ -113,7 +114,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Align new work with the existing canonical `workspaces` / `workspace_memberships` schema and the existing 34-table CRM, commerce, service, finance, and governance model. No parallel organization schema is retained.
 - [x] Add concurrency-safe workspace-scoped document numbering for ACC, CON, LEA, OPP, QUO, and SO prefixes.
 - [x] Restrict custom-field definition mutations to owner/admin/sales-manager roles and restrict audit-log reads to owner/admin/sales-manager/analyst roles.
-- [x] Apply migrations 00140–00200 to a disposable local Supabase project in CI. A production Supabase project has not been provisioned or migrated.
+- [x] Apply migrations 00140–00190 to a disposable local Supabase project in CI.
+- [ ] Verify migration 00200 and the expanded 55-assertion suite in CI. A production Supabase project has not been provisioned or migrated.
 
 - [x] Add role-aware write policies so analyst/read-only roles cannot mutate core business data.
 - [x] Add same-workspace relationship guards for core CRM links and polymorphic custom-field values.
