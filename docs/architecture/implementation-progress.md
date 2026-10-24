@@ -28,7 +28,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 ## Phase 3 — CRM and AI prospecting
 - [x] Frontend prototypes for companies/accounts, contacts, leads, opportunity board/list, quotes, orders, fulfillment, payments, analytics, and settings.
 - [x] Add shared list/table, local draft creation, configurable field catalog prototype, workflow builder, analytics panels, and AI assistant shell.
-- [ ] Connect companies, contacts, leads, deduplication, and conversion history to persistent services.
+- [x] Connect account/contact/lead/opportunity/quote/order list and create paths to workspace-scoped persistence; add lead conversion and quote-to-order RPCs.
+- [ ] Connect duplicate detection/review, full edit/delete flows, and complete conversion history UI.
 - [ ] AI Gateway, provider adapters, budgets, usage logging, and evaluations.
 - [ ] Prospect research, evidence provenance, scoring, review queue, and outreach approvals.
 
@@ -40,7 +41,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 ## Phase 5 — settings and integrations
 - [x] Frontend prototype for custom field definitions, field types, required/unique flags, and object selector.
-- [ ] Persist custom field definitions, options, values, validation, and permissions.
+- [x] Persist custom field definitions and options metadata with role-restricted schema mutations.
+- [ ] Persist custom-field values and enforce typed validation, uniqueness, and field-level access.
 - [ ] AI provider/model settings and secure credential handling.
 - [ ] API keys, scopes, revocation, rate limits, and webhooks.
 - [ ] Automation, notifications, audit, imports/exports, and reporting.
@@ -61,10 +63,12 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 ## Frontend implementation note — 2026-10-24
 
-- Expanded the Carbon-based navigation into AI acquisition, CRM, sales, orders/fulfillment, service, analytics, AI automation, data governance, and system configuration.
-- Added a shared business module page for dashboards, tables, search/filter, local draft creation, sales pipeline board, analytics, custom fields, workflow steps, AI assistant, user/role previews, and integration settings.
-- All records and metrics in the prototype are explicitly demo data. CRUD changes remain local to the current browser view; no database writes, external searches, authentication, or provider API calls are performed.
-- Build verification remains pending because the current execution environment cannot resolve GitHub for a local clone and dependency installation.
+- Expanded Carbon-based navigation into AI acquisition, CRM, sales, orders/fulfillment, service, analytics, AI automation, data governance, and system configuration.
+- Added shared business module views for lists, search/filter, local demo drafts, opportunity board, analytics, custom-field configuration, workflow editor, AI assistant, user/role previews, and integrations.
+- Added a Supabase sign-in gate when environment variables are configured; without those variables the app remains in clearly labeled demo mode.
+- Added a workspace-scoped repository adapter for list/create operations on accounts, contacts, leads, opportunities, quotes, and sales orders. Lead conversion and accepted-quote-to-order actions call atomic database functions. Multi-workspace users are blocked until a workspace switcher exists.
+- Custom-field definitions can be listed/created/deleted through the workspace metadata API when the signed-in role is authorized. Field value persistence, dynamic validation, edit/delete for ordinary records, pagination, and relationship hydration remain incomplete.
+- Build verification remains pending: this environment could not resolve GitHub for a local clone or dependency installation, so no successful Vite build is claimed.
 
 
 ## CRM foundation progress — 2026-10-24
@@ -76,7 +80,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [ ] Add automated schema/RLS tests, migration runner configuration, and seed data for local development.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
-- [ ] Add field-level authorization, immutable audit triggers, and reviewed record-conversion transaction.
+- [x] Add append-only audit triggers and atomic lead-conversion / quote-to-order transactions.
+- [ ] Complete field-level authorization and run security review against a live project.
 
 
 ## Commerce and service schema — 2026-10-24
@@ -99,3 +104,11 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Extend schema smoke tests to assert the presence of 34 CRM tables and RLS on representative core tables.
 - [ ] Expand automated tests to cover role boundaries, cross-tenant relationship rejection, and audit immutability.
 - [ ] Run all migrations and pgTAP tests in a disposable Supabase environment before production use.
+
+
+## Workspace persistence and transaction progress — 2026-10-24
+
+- [x] Align new work with the existing canonical `workspaces` / `workspace_memberships` schema and the existing 34-table CRM, commerce, service, finance, and governance model. No parallel organization schema is retained.
+- [x] Add concurrency-safe workspace-scoped document numbering for ACC, CON, LEA, OPP, QUO, and SO prefixes.
+- [x] Restrict custom-field definition mutations to owner/admin/sales-manager roles and restrict audit-log reads to owner/admin/sales-manager/analyst roles.
+- [ ] Apply migrations 00140–00170 in a disposable Supabase project; the repository code has not yet been applied to a live database.
