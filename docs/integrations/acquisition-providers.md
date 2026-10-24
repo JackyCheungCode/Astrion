@@ -8,13 +8,15 @@ Create a local, ignored `.env.functions` file or set secrets in the Supabase pro
 
 ```dotenv
 APP_ORIGIN=http://localhost:5173
+# Optional comma-separated exact allowlist for preview + production origins
+APP_ORIGINS=http://localhost:5173
 SERPER_API_KEY=
 TAVILY_API_KEY=
 WORKS_API_URL=
 WORKS_API_KEY=
 ```
 
-For local development, load secrets with `supabase functions serve acquisition-research --env-file .env.functions`. For a deployed project, use `supabase secrets set --env-file .env.functions` and deploy with `supabase functions deploy acquisition-research`. Set `APP_ORIGIN` to the exact production web origin before deployment.
+For local development, load secrets with `supabase functions serve acquisition-research --env-file .env.functions`. For a deployed project, use `supabase secrets set --env-file .env.functions` and deploy with `supabase functions deploy acquisition-research`. Set `APP_ORIGIN` to a safe fallback origin and `APP_ORIGINS` to the comma-separated list of exact allowed origins (for example, a preview origin and the production origin). Do not use wildcards.
 
 The Edge Function uses Serper's Google Search endpoint and Tavily's search endpoint from the server. It accepts only authenticated users with an active workspace membership, validates the selected workspace against that user's active memberships, caps a request at ten results per provider, applies timeouts, and records a minimal audit event. When the user has multiple workspaces, the request must include the selected workspace ID from the Carbon workspace selector. Lead persistence is opt-in and writes candidates to the lead review queue; it does not send outreach.
 
