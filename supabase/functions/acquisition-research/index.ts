@@ -214,7 +214,7 @@ Deno.serve(async (request) => {
     .select("workspace_id,role_key")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .limit(100);
+    .limit(1000);
   if (membershipError) return jsonResponse({ error: "Could not verify workspace membership" }, 403);
   if (!memberships?.length) return jsonResponse({ error: "This user is not a member of a workspace" }, 403);
 
