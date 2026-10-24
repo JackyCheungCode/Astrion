@@ -5,14 +5,19 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 ## Phase 0 — repository baseline
 - [x] Confirm target repository and default branch.
 - [x] Create architecture working branch.
-- [ ] Inspect existing source files, package manifests, deployment config, and Supabase migrations.
-- [ ] Record current stack and deployment constraints before choosing dependencies.
+- [x] Inspect current README and repository documentation baseline.
+- [x] Probe common root package manifests; no root `package.json` was found on the inspected default branch.
+- [ ] Verify complete source tree, CI/deployment configuration, and any externally managed services.
+- [ ] Inspect Supabase project, existing migrations, tables, indexes, RLS policies, and consumers before selecting a physical schema.
 
 ## Phase 1 — architecture and documentation
-- [ ] Finalize module boundaries and dependency rules.
-- [ ] Finalize entity relationships and state transitions.
-- [ ] Review tenant isolation, RLS, secrets, audit, and API security.
-- [ ] Confirm Carbon component/version strategy.
+- [x] Establish modular-monolith-first architectural direction in ADR 0001.
+- [x] Draft logical entity relationships and lifecycle contracts for review.
+- [x] Draft tenant isolation and authorization matrix for review.
+- [ ] Finalize module boundaries and dependency rules against the verified stack.
+- [ ] Finalize entity relationships, state transitions, and financial edge cases with product-owner review.
+- [ ] Review tenant isolation, RLS, secrets, audit, and API security against the actual environment.
+- [ ] Confirm Carbon component/version strategy against the verified frontend stack.
 
 ## Phase 2 — foundation
 - [ ] Align package manager and workspace tooling with the existing stack.
@@ -46,4 +51,6 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 ## Change log
 
 - Architecture V2 skeleton: documentation and tracked directory placeholders only.
-- No dependency installation, database migration, secret creation, or deployment is included in this phase.
+- Normalized development standards: development rules documented; runtime implementation remains unverified.
+- Domain model and authorization draft: logical contracts only; no physical schema or permissions have been applied.
+- No dependency installation, database migration, secret creation, or deployment is included in these phases.
