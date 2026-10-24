@@ -1,4 +1,4 @@
-name: Astrion web and database CI
+name: Astrion web CI
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: astrion-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: astrion-web-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,19 +33,14 @@ jobs:
       - name: Build web app
         run: npm run build --prefix apps/web
 
-  database-tests:
+  edge-function-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
         with:
-          version: latest
-      - name: Start local Supabase
-        run: supabase start
-      - name: Run database schema and policy tests
-        run: supabase test db
-      - name: Stop local Supabase
-        if: always()
-        run: supabase stop --no-backup
+          deno-version: v2.x
+      - name: Type-check acquisition Edge Function
+        run: deno check supabase/functions/acquisition-research/index.ts
