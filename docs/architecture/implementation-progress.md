@@ -79,7 +79,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
 - [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
 - [x] Add Supabase local configuration and 58 schema/RLS/transaction/usage/custom-field smoke assertions.
-- [x] Migrations 00200–00210 and all 56 assertions passed in GitHub Actions; migration 00220 adds server-side custom-field rules and awaits the expanded 58-assertion CI run.
+- [x] Migrations 00200–00220 and all 58 assertions passed in GitHub Actions.
 - [ ] Add representative tenant seed data and deeper role-boundary tests.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
@@ -132,3 +132,6 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 - [x] Add CSV export of the current filtered table result set and a read-only audit-log view (visibility follows audit RLS).
 - [x] Add confirmation-based soft archive for core accounts, contacts, leads, and opportunities; full restore and deletion flows remain pending.
+
+- [x] Connect custom field values to record detail forms with typed inputs, dropdown options, defaults, JSON validation rules, uniqueness enforcement, read-only protection, and audit capture.
+- [x] Add atomic uniqueness checks for custom field values and validate non-empty required text/multi-select values on save.
