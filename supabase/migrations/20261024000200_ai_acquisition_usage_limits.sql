@@ -48,6 +48,8 @@ begin
   end if;
   if p_query_hash !~ '^[a-f0-9]{64}$' then raise exception 'Invalid query fingerprint' using errcode='22023'; end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text,0));
+
   select count(*) into v_user_count
   from public.ai_acquisition_usage
   where workspace_id=p_workspace_id and actor_user_id=v_actor and created_at > now()-interval '1 hour';
