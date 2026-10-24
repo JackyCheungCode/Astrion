@@ -203,3 +203,6 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Inspect Cloudflare Workers Build logs and identify the preview deployment failure: Wrangler reported that the configuration lacked the required `previews` block.
 - [x] Add root `wrangler.jsonc` with `previews`, Vite build command, static asset directory, and SPA fallback; update web deployment documentation.
 - [ ] Verify the next Cloudflare preview build after the Wrangler configuration change. The build result must be checked before declaring deployment fixed.
+
+- [x] Add workspace-scoped archive browsing and restore operations for CRM objects that support soft archive; expose the archive filter and restore action through Carbon controls.
+- [ ] Verify restore permissions and audit capture in database integration tests, and add an automated UI regression test for archive/restore.
