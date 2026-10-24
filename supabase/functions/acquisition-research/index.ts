@@ -8,6 +8,7 @@ type SearchResult = {
   url: string;
   snippet: string;
   score?: number;
+  evidenceScore?: number;
   domain: string;
 };
 
@@ -111,6 +112,18 @@ async function searchTavily(query: string, maxResults: number): Promise<SearchRe
   return normalizeTavily(await response.json(), maxResults);
 }
 
+function scoreEvidenceQuality(result: SearchResult): number {
+  let score = 15;
+  if (result.providers.length > 1) score += 25;
+  if (result.title.trim().length >= 15) score += 10;
+  if (result.snippet.trim().length >= 240) score += 25;
+  else if (result.snippet.trim().length >= 100) score += 18;
+  else if (result.snippet.trim().length >= 40) score += 10;
+  if (result.score !== undefined) score += Math.round(Math.max(0, Math.min(1, result.score)) * 15);
+  if (result.url.startsWith("https://")) score += 10;
+  return Math.max(0, Math.min(100, score));
+}
+
 function mergeResults(results: SearchResult[]): SearchResult[] {
   const merged = new Map<string, SearchResult>();
   for (const result of results) {
@@ -199,6 +212,8 @@ Deno.serve(async (request) => {
   if (!providers.length) return jsonResponse({ error: "Choose Serper, Tavily, or both providers" }, 400);
   const maxResults = Math.min(10, Math.max(1, Number.isFinite(Number(body.maxResults)) ? Math.floor(Number(body.maxResults)) : 10));
   const persistCandidates = body.persistCandidates === true;
+  const scoreEvidence = body.scoreEvidence !== false;
+  const verifiedOnly = body.verifiedOnly === true;
 
   const requestedWorkspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
   if (requestedWorkspaceId.length > 100) {
@@ -264,7 +279,13 @@ Deno.serve(async (request) => {
     rawResults.push(...result.results);
   }
 
-  const results = mergeResults(rawResults);
+  let results = mergeResults(rawResults);
+  if (verifiedOnly) {
+    results = results.filter((result) => Boolean(result.url && result.domain && result.snippet.trim()));
+  }
+  if (scoreEvidence) {
+    results = results.map((result) => ({ ...result, evidenceScore: scoreEvidenceQuality(result) }));
+  }
   let works: Record<string, unknown> = { status: "skipped", message: "Works API is used only when both search providers are selected" };
   if (providers.includes("serper") && providers.includes("tavily")) {
     try {
@@ -304,6 +325,7 @@ Deno.serve(async (request) => {
           title: item.title,
           url: item.url,
           snippet: item.snippet,
+          evidence_score: candidate.evidenceScore ?? null,
           observed_at: new Date().toISOString(),
         }));
         const { error: insertError } = await supabase.from("crm_leads").insert({
