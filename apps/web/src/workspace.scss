@@ -102,12 +102,3 @@ button { font: inherit; }
   .astrion-workspace-switcher .cds--label { display: none; }
 }
 
-.astrion-workspace-switcher { width: min(260px, 28vw); min-width: 170px; margin-right: 8px; }
-.astrion-workspace-switcher .cds--dropdown__wrapper { min-width: 0; }
-.astrion-workspace-switcher .cds--label { color: #c6c6c6; font-size: 10px; margin-bottom: 2px; }
-.astrion-workspace-switcher .cds--list-box { min-height: 32px; border-bottom-color: #6f6f6f; background: #262626; color: #f4f4f4; }
-.astrion-workspace-switcher .cds--list-box__field { color: #f4f4f4; }
-.astrion-workspace-switcher .cds--list-box__menu-icon > svg { fill: #f4f4f4; }
-.astrion-workspace-switcher .cds--list-box--disabled { opacity: .85; }
-@media (max-width: 767px) { .astrion-workspace-switcher { width: min(190px, 36vw); min-width: 120px; margin-right: 2px; } .astrion-workspace-switcher .cds--label { display: none; } }
-@media (max-width: 420px) { .astrion-workspace-switcher { width: min(145px, 32vw); min-width: 100px; } }
