@@ -26,6 +26,11 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 function getDomain(rawUrl: string): string | null {
   try {
     const url = new URL(rawUrl);
@@ -208,6 +213,18 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "Your workspace role cannot create lead records" }, 403);
   }
 
+  const queryHash = await sha256Hex(query.toLowerCase().replace(/\\s+/g, " "));
+  const usageProviders = [...providers, ...(providers.includes("serper") && providers.includes("tavily") && Deno.env.get("WORKS_API_URL") && Deno.env.get("WORKS_API_KEY") ? ["works"] : [])];
+  const { data: requestId, error: reserveError } = await supabase.rpc("reserve_acquisition_request", {
+    p_workspace_id: workspaceId,
+    p_provider_keys: usageProviders,
+    p_query_hash: queryHash,
+  });
+  if (reserveError || !requestId) {
+    const rateLimited = reserveError?.code === "P0001" || reserveError?.message?.toLowerCase().includes("rate limit");
+    return jsonResponse({ error: rateLimited ? "Search rate limit reached. Please retry after the one-hour window." : "Unable to reserve an acquisition request for this workspace." }, rateLimited ? 429 : 403);
+  }
+
   const providerStatuses: Array<Record<string, unknown>> = [];
   const rawResults: SearchResult[] = [];
   const providerCalls = await Promise.all(providers.map(async (provider): Promise<{provider: ProviderName; status: 'ok' | 'error'; results: SearchResult[]; message?: string}> => {
@@ -308,6 +325,18 @@ Deno.serve(async (request) => {
     },
   });
 
+  const successfulSearches = providerStatuses.filter((provider) =>
+    (provider.provider === "serper" || provider.provider === "tavily") && provider.status === "ok"
+  ).length;
+  const usageStatus = successfulSearches === 0 ? "failed" : providerStatuses.some((provider) => provider.status === "error") ? "partial" : "completed";
+  const { error: usageError } = await supabase.rpc("complete_acquisition_request", {
+    p_request_id: requestId,
+    p_workspace_id: workspaceId,
+    p_status: usageStatus,
+    p_result_count: results.length,
+    p_persisted_count: persistedCount,
+  });
+
   return jsonResponse({
     query,
     providers: providerStatuses,
@@ -317,5 +346,6 @@ Deno.serve(async (request) => {
     duplicatesSkipped,
     persistenceErrors,
     auditLogged: !auditError,
+    usageLogged: !usageError,
   });
 });
