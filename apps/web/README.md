@@ -1,6 +1,6 @@
 # Astrion web UI
 
-This app is a Carbon React-based UI prototype. The login route is rendered at `/login`; static hosting should rewrite application routes to `index.html`.
+This app is a Carbon React-based UI prototype. The login route is rendered at `/login`; Cloudflare Pages serves the Vite SPA entry for client-side routes.
 
 ## Run locally
 
