@@ -88,3 +88,14 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add tenant-scoped indexes and RLS policies to these additional tables.
 - [x] Change custom-field API names in the UI to generated read-only keys; keep field type, required, and unique choices in controls.
 - [ ] Execute a full Vite build and database migration test in a network-enabled project environment; this has not been verified here.
+
+
+## Finance, fulfillment, governance — 2026-10-24
+
+- [x] Add shipment and shipment-line records.
+- [x] Add contracts, invoices, and payment records.
+- [x] Add service work orders and SLA policy definitions.
+- [x] Add approval requests, import jobs, duplicate rules/review queue, and integration connection/sync records.
+- [x] Extend schema smoke tests to assert the presence of 34 CRM tables and RLS on representative core tables.
+- [ ] Expand automated tests to cover role boundaries, cross-tenant relationship rejection, and audit immutability.
+- [ ] Run all migrations and pgTAP tests in a disposable Supabase environment before production use.
