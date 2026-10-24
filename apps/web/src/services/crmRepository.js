@@ -86,11 +86,11 @@ async function getOrgContext() {
     .select('organization_id,role')
     .eq('user_id', session.user.id)
     .eq('is_active', true)
-    .limit(1)
-    .maybeSingle();
+    .limit(2);
   if (error) throw error;
-  if (!data?.organization_id) throw new Error('当前账号尚未加入工作空间。请由管理员完成组织成员配置。');
-  return { organizationId: data.organization_id, userId: session.user.id };
+  if (!data?.length) throw new Error('当前账号尚未加入工作空间。请由管理员完成组织成员配置。');
+  if (data.length > 1) throw new Error('当前账号加入了多个工作空间；请先在工作空间切换器中选择组织（切换器尚未启用），为防止跨组织误操作，当前请求已停止。');
+  return { organizationId: data[0].organization_id, userId: session.user.id };
 }
 
 export async function listCrmRecords(path) {
