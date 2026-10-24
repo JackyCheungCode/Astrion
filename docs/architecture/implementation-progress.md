@@ -212,3 +212,5 @@ This section supersedes earlier high-level prototype-only summaries where later 
 
 - [x] Make acquisition CORS origin handling support a comma-separated exact allowlist so preview and production origins can be configured without wildcard access.
 - [ ] Verify the allowlist with the actual deployed Supabase Edge Function and configure `APP_ORIGINS` in its server-side secrets.
+
+- [x] Prevent workspace-membership reloads on every Supabase token refresh by keying the membership-loading effect to the authenticated user ID; this avoids unnecessary repeated queries when the same user refreshes their session.
