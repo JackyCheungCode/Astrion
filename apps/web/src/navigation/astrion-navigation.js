@@ -1,4 +1,4 @@
-import { Dashboard, MagicWand, UserMultiple, Bullseye, ShoppingCart, ChartLine, ChatBot, Settings } from '@carbon/icons-react';
+import { Dashboard, MagicWand, UserMultiple, Target, ShoppingCart, ChartLine, ChatBot, Settings } from '@carbon/icons-react';
 
 export const astrionNavigation = [
   { label: '工作总览', path: '/dashboard', Icon: Dashboard },
@@ -22,7 +22,7 @@ export const astrionNavigation = [
     { label: '客户互动历史', path: '/crm/interactions' },
     { label: '客户去重与合并', path: '/crm/deduplication' },
   ]},
-  { label: '销售管道', path: '/sales', Icon: Bullseye, children: [
+  { label: '销售管道', path: '/sales', Icon: Target, children: [
     { label: '商机看板', path: '/sales/board' },
     { label: '商机列表', path: '/sales/opportunities' },
     { label: '销售活动', path: '/sales/activities' },
