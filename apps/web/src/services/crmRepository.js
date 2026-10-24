@@ -113,12 +113,11 @@ export async function createCrmRecord(path, name) {
   if (!config) throw new Error('该模块尚未启用持久化记录。');
   if (!name?.trim()) throw new Error('请填写记录名称。');
   const { organizationId, userId } = await getOrgContext();
-  const { count, error: countError } = await supabase
-    .from(config.table)
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', organizationId);
-  if (countError) throw countError;
-  const number = config.prefix + '-' + String((count || 0) + 1).padStart(5, '0');
+  const { data: number, error: numberError } = await supabase.rpc('next_crm_number', {
+    p_organization_id: organizationId,
+    p_prefix: config.prefix,
+  });
+  if (numberError) throw numberError;
   const payload = {
     organization_id: organizationId,
     created_by: userId,
@@ -137,10 +136,13 @@ export async function getCurrentUser() {
   return data.user;
 }
 
-function businessNumber(prefix) {
-  const suffix = globalThis.crypto?.randomUUID?.().replace(/-/g,'').slice(0,10).toUpperCase()
-    || Math.random().toString(36).slice(2,12).toUpperCase();
-  return prefix + '-' + suffix;
+async function nextCrmNumber(prefix, organizationId) {
+  const { data, error } = await supabase.rpc('next_crm_number', {
+    p_organization_id: organizationId,
+    p_prefix: prefix,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function convertLeadToAccount(leadId) {
@@ -150,8 +152,8 @@ export async function convertLeadToAccount(leadId) {
   if (leadError) throw leadError;
   const { data, error } = await supabase.rpc('convert_lead_to_account', {
     p_lead_id: lead.id,
-    p_account_number: businessNumber('ACC'),
-    p_contact_number: businessNumber('CON'),
+    p_account_number: await nextCrmNumber('ACC', organizationId),
+    p_contact_number: await nextCrmNumber('CON', organizationId),
     p_create_opportunity: false,
     p_opportunity_number: null,
   });
@@ -166,7 +168,7 @@ export async function convertQuoteToOrder(quoteId) {
   if (quoteError) throw quoteError;
   const { data, error } = await supabase.rpc('convert_accepted_quote_to_order', {
     p_quote_id: quote.id,
-    p_order_number: businessNumber('SO'),
+    p_order_number: await nextCrmNumber('SO', organizationId),
   });
   if (error) throw error;
   return data;
