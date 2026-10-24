@@ -273,7 +273,7 @@ function parseCsvFile(text) {
       else quoted=!quoted;
     }else if(char===','&&!quoted){row.push(cell);cell='';}
     else if((char==='\n'||char==='\r')&&!quoted){
-      if(char==='\\r'&&source[index+1]==='\n')index++;
+      if(char==='\r'&&source[index+1]==='\n')index++;
       row.push(cell);
       if(row.some((value)=>value.trim()!==''))rows.push(row);
       row=[];cell='';
