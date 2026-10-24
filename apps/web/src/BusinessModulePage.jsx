@@ -167,6 +167,12 @@ function FieldConfiguration() {
   const [fieldType,setFieldType] = useState('text');
   const [required,setRequired] = useState(false);
   const [unique,setUnique] = useState(false);
+  const [optionsText,setOptionsText] = useState('');
+  const [defaultValue,setDefaultValue] = useState('');
+  const [validationRulesText,setValidationRulesText] = useState('{}');
+  const [searchable,setSearchable] = useState(true);
+  const [filterable,setFilterable] = useState(true);
+  const [readOnly,setReadOnly] = useState(false);
   const [fields,setFields] = useState(fieldsByObject.account.map((field)=>({...field,isSystem:true})));
   const [fieldError,setFieldError] = useState('');
   useEffect(()=>{
@@ -177,21 +183,28 @@ function FieldConfiguration() {
       .catch((error)=>{if(active){setFields(defaults);setFieldError(error?.message||'自定义字段读取失败。');}});
     return ()=>{active=false;};
   },[objectName]);
-  const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
+  const typeLabels = {text:'文本',longtext:'长文本',number:'数字',decimal:'小数',currency:'金额',date:'日期',datetime:'日期时间',boolean:'布尔值',email:'邮箱',phone:'电话',url:'网址',json:'JSON',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
   const generatedFieldName = label.trim().normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'custom_field_' + (fields.length + 1);
   const addField = async () => {
     if (!label.trim()) return;
     const fieldKey = generatedFieldName;
     if (fields.some((field)=>field.name===fieldKey)) return;
-    const nextField={name:fieldKey,label:label.trim(),type:typeLabels[fieldType],required,unique,isSystem:false};
+    const options=['select','multi'].includes(fieldType)?optionsText.split(',').map((value)=>value.trim()).filter(Boolean):[];
+    if(['select','multi'].includes(fieldType)&&!options.length){setFieldError('单选或多选字段至少需要一个选项。');return;}
+    let validationRules={};
+    try{
+      validationRules=validationRulesText.trim()?JSON.parse(validationRulesText):{};
+      if(!validationRules||Array.isArray(validationRules)||typeof validationRules!=='object')throw new Error('校验规则必须是 JSON 对象。');
+    }catch(error){setFieldError(error?.message||'校验规则 JSON 格式不正确。');return;}
+    const nextField={name:fieldKey,label:label.trim(),type:typeLabels[fieldType],required,unique,isSystem:false,options,defaultValue,validationRules,searchable,filterable,readonly:readOnly};
     if(supabaseConfigured){
       try{
-        const saved=await createFieldDefinition(objectName,{name:fieldKey,label:label.trim(),type:fieldType,required,unique});
+        const saved=await createFieldDefinition(objectName,{name:fieldKey,label:label.trim(),type:fieldType,required,unique,options,defaultValue,validationRules,searchable,filterable,readonly:readOnly});
         setFields((prev)=>[...prev,{...nextField,id:saved.id}]);
         setFieldError('');
       }catch(error){setFieldError(error?.message||'字段保存失败，请检查工作空间权限。');return;}
     }else setFields((prev)=>[...prev,nextField]);
-    setLabel('');setRequired(false);setUnique(false);
+    setLabel('');setRequired(false);setUnique(false);setOptionsText('');setDefaultValue('');setValidationRulesText('{}');setSearchable(true);setFilterable(true);setReadOnly(false);
   };
   const removeField = async (field) => {
     if(field.isSystem)return;
@@ -202,15 +215,18 @@ function FieldConfiguration() {
     setFields((prev)=>prev.filter((item)=>item.name!==field.name));
   };
   return <div className="bm-field-config">
-    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>{supabaseConfigured?'字段定义将保存至当前工作空间；字段值验证仍需后端规则执行。':'当前为本地演示模式；配置 Supabase 后可持久化自定义字段定义。'}</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields((fieldsByObject[next]||fieldsByObject.account).map((field)=>({...field,isSystem:true})));}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
+    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>{supabaseConfigured?'字段定义将保存至当前工作空间；字段值验证仍需后端规则执行。':'当前为本地演示模式；配置 Supabase 后可持久化自定义字段定义。'}</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields((fieldsByObject[next]||fieldsByObject.account).map((field)=>({...field,isSystem:true})));setOptionsText('');setDefaultValue('');setValidationRulesText('{}');setRequired(false);setUnique(false);setSearchable(true);setFilterable(true);setReadOnly(false);}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
     {fieldError&&<InlineNotification kind="warning" lowContrast title="字段配置提示" subtitle={fieldError}/>}<div className="bm-field-list"><div className="bm-field-head"><span>字段标签</span><span>API 名称</span><span>类型</span><span>规则</span><span>操作</span></div>
-      {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}</small></div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={field.isSystem} onClick={()=>removeField(field)}/></div>)}
+      {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}{field.readonly?' · 只读':''}{field.searchable===false?' · 不可搜索':''}{field.filterable===false?' · 不可筛选':''}</small>{field.options?.length>0&&<small>选项：{field.options.join('、')}</small>}</div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={field.isSystem} onClick={()=>removeField(field)}/></div>)}
     </div>
     <div className="bm-add-field"><h3>新增字段</h3><div className="bm-field-form">
       <TextInput id="bm-field-label" labelText="字段标签" value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="例如：客户优先级"/>
       <div className="bm-generated-api"><span>API 名称（自动生成）</span><code>{generatedFieldName}</code></div>
       <Select id="bm-field-type" labelText="字段类型" value={fieldType} onChange={(e)=>setFieldType(e.target.value)}>{Object.entries(typeLabels).map(([value,text])=><SelectItem key={value} value={value} text={text}/>)}</Select>
-    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(checked)=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(checked)=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!label.trim()||fields.some((field)=>field.name===generatedFieldName)}>添加字段</Button></div></div>
+      {['select','multi'].includes(fieldType)&&<TextInput id="bm-field-options" labelText="下拉选项（逗号分隔）" value={optionsText} onChange={(e)=>setOptionsText(e.target.value)} placeholder="例如：高,中,低"/>}
+      <TextInput id="bm-field-default" labelText="默认值（可选）" value={defaultValue} onChange={(e)=>setDefaultValue(e.target.value)} placeholder="默认值"/>
+      <TextArea id="bm-field-validation" labelText="校验规则 JSON" value={validationRulesText} onChange={(e)=>setValidationRulesText(e.target.value)} rows={2}/>
+    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(checked)=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(checked)=>setUnique(checked)}/><Checkbox id="bm-searchable" labelText="可搜索" checked={searchable} onChange={(checked)=>setSearchable(checked)}/><Checkbox id="bm-filterable" labelText="可筛选" checked={filterable} onChange={(checked)=>setFilterable(checked)}/><Checkbox id="bm-readonly" labelText="只读字段" checked={readOnly} onChange={(checked)=>setReadOnly(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!label.trim()||fields.some((field)=>field.name===generatedFieldName)}>添加字段</Button></div></div>
   </div>;
 }
 
