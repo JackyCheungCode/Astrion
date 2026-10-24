@@ -214,3 +214,8 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [ ] Verify the allowlist with the actual deployed Supabase Edge Function and configure `APP_ORIGINS` in its server-side secrets.
 
 - [x] Prevent workspace-membership reloads on every Supabase token refresh by keying the membership-loading effect to the authenticated user ID; this avoids unnecessary repeated queries when the same user refreshes their session.
+
+
+- [x] Add an enterprise knowledge-profile section to the acquisition task builder (product/service offering, value proposition, ideal-customer context, and exclusions) before discovery, so search criteria are grounded in the user's business context.
+- [x] Include the knowledge-profile context in the server-side discovery query even when the user provides optional custom search terms; map region, industry, audience, company-size, and intent selections to readable labels instead of sending internal option codes.
+- [ ] Validate the updated Carbon TextArea form and discovery flow in a fresh Vite build and authenticated test workspace. A local build could not be run in this environment because GitHub could not be resolved from the execution container; no current CI run or check result has been confirmed.
