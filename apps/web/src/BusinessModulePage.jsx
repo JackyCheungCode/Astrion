@@ -3,7 +3,7 @@ import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
 } from '@carbon/icons-react';
-import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder } from './services/crmRepository.js';
+import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
 import {
   Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
@@ -122,20 +122,44 @@ function FieldConfiguration() {
   const [fieldType,setFieldType] = useState('text');
   const [required,setRequired] = useState(false);
   const [unique,setUnique] = useState(false);
-  const [fields,setFields] = useState(fieldsByObject.account);
+  const [fields,setFields] = useState(fieldsByObject.account.map((field)=>({...field,isSystem:true})));
+  const [fieldError,setFieldError] = useState('');
+  useEffect(()=>{
+    let active=true;
+    const defaults=(fieldsByObject[objectName]||fieldsByObject.account).map((field)=>({...field,isSystem:true}));
+    if(!supabaseConfigured){setFields(defaults);setFieldError('');return ()=>{active=false;};}
+    listFieldDefinitions(objectName).then((custom)=>{if(active){setFields([...defaults,...custom.filter((field)=>!defaults.some((item)=>item.name===field.name))]);setFieldError('');}})
+      .catch((error)=>{if(active){setFields(defaults);setFieldError(error?.message||'自定义字段读取失败。');}});
+    return ()=>{active=false;};
+  },[objectName]);
   const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
   const generatedFieldName = label.trim().normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'custom_field_' + (fields.length + 1);
-  const addField = () => {
+  const addField = async () => {
     if (!label.trim()) return;
     const fieldKey = generatedFieldName;
     if (fields.some((field)=>field.name===fieldKey)) return;
-    setFields((prev)=>[...prev,{name:fieldKey,label:label.trim(),type:typeLabels[fieldType],required,unique}]);
+    const nextField={name:fieldKey,label:label.trim(),type:typeLabels[fieldType],required,unique,isSystem:false};
+    if(supabaseConfigured){
+      try{
+        const saved=await createFieldDefinition(objectName,{name:fieldKey,label:label.trim(),type:fieldType,required,unique});
+        setFields((prev)=>[...prev,{...nextField,id:saved.id}]);
+        setFieldError('');
+      }catch(error){setFieldError(error?.message||'字段保存失败，请检查工作空间权限。');return;}
+    }else setFields((prev)=>[...prev,nextField]);
     setLabel('');setRequired(false);setUnique(false);
   };
+  const removeField = async (field) => {
+    if(field.isSystem)return;
+    if(field.id&&supabaseConfigured){
+      try{await deleteFieldDefinition(field.id);setFieldError('');}
+      catch(error){setFieldError(error?.message||'字段删除失败，请检查权限。');return;}
+    }
+    setFields((prev)=>prev.filter((item)=>item.name!==field.name));
+  };
   return <div className="bm-field-config">
-    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>当前修改仅保存在浏览器内存中；正式保存需要连接元数据 API。</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields(fieldsByObject[next]||fieldsByObject.account);}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
-    <div className="bm-field-list"><div className="bm-field-head"><span>字段标签</span><span>API 名称</span><span>类型</span><span>规则</span><span>操作</span></div>
-      {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}</small></div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={['account_number','account_name'].includes(field.name)} onClick={()=>setFields((prev)=>prev.filter((_,i)=>i!==index))}/></div>)}
+    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>{supabaseConfigured?'字段定义将保存至当前工作空间；字段值验证仍需后端规则执行。':'当前为本地演示模式；配置 Supabase 后可持久化自定义字段定义。'}</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields((fieldsByObject[next]||fieldsByObject.account).map((field)=>({...field,isSystem:true})));}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
+    {fieldError&&<InlineNotification kind="warning" lowContrast title="字段配置提示" subtitle={fieldError}/>}<div className="bm-field-list"><div className="bm-field-head"><span>字段标签</span><span>API 名称</span><span>类型</span><span>规则</span><span>操作</span></div>
+      {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}</small></div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={field.isSystem} onClick={()=>removeField(field)}/></div>)}
     </div>
     <div className="bm-add-field"><h3>新增字段</h3><div className="bm-field-form">
       <TextInput id="bm-field-label" labelText="字段标签" value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="例如：客户优先级"/>
