@@ -35,6 +35,12 @@ begin
   if v_field.is_required and (new.value is null or new.value='null'::jsonb or new.value='""'::jsonb) then
     raise exception 'Custom field "%" is required',v_field.label using errcode='23502';
   end if;
+  if v_field.is_required and v_field.field_type in ('text','long_text','email','phone','url','single_select') and new.value is not null and new.value<>'null'::jsonb and btrim(new.value #>> '{}')='' then
+    raise exception 'Custom field "%" is required',v_field.label using errcode='23502';
+  end if;
+  if v_field.is_required and v_field.field_type='multi_select' and jsonb_typeof(new.value)='array' and jsonb_array_length(new.value)=0 then
+    raise exception 'Custom field "%" requires at least one selection',v_field.label using errcode='23502';
+  end if;
 
   if v_field.is_unique and new.value is not null and new.value<>'null'::jsonb then
     perform pg_advisory_xact_lock(hashtextextended(new.workspace_id::text||':'||new.field_definition_id::text||':'||new.value::text,0));
