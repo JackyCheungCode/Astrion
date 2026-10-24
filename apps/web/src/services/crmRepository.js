@@ -152,6 +152,50 @@ export async function convertQuoteToOrder(quoteId) {
   return data;
 }
 
+const fieldTypeLabels = {
+  text:'文本', long_text:'长文本', number:'数字', decimal:'小数', currency:'金额',
+  date:'日期', datetime:'日期时间', boolean:'布尔值', single_select:'单选下拉框',
+  multi_select:'多选下拉框', email:'邮箱', phone:'电话', url:'网址',
+  user_reference:'用户关联', record_reference:'对象关联', formula:'公式', auto_number:'自动编号', json:'JSON',
+};
+const fieldTypeToDatabase = {
+  text:'text', longtext:'long_text', number:'number', currency:'currency', date:'date',
+  boolean:'boolean', select:'single_select', multi:'multi_select', user:'user_reference',
+  relation:'record_reference', formula:'formula', auto:'auto_number',
+};
+
+export async function listFieldDefinitions(objectKey) {
+  const { workspaceId } = await getWorkspaceContext();
+  const { data,error } = await supabase.from('crm_custom_field_definitions')
+    .select('id,field_key,label,field_type,is_required,is_unique,is_readonly,options,display_order')
+    .eq('workspace_id',workspaceId).eq('object_key',objectKey).eq('is_active',true)
+    .order('display_order',{ascending:true}).limit(300);
+  if (error) throw error;
+  return (data || []).map((field)=>({
+    id:field.id,name:field.field_key,label:field.label,type:fieldTypeLabels[field.field_type]||field.field_type,
+    required:field.is_required,unique:field.is_unique,isSystem:field.is_readonly,
+  }));
+}
+
+export async function createFieldDefinition(objectKey,field) {
+  const { workspaceId,userId } = await getWorkspaceContext();
+  const dbType = fieldTypeToDatabase[field.type];
+  if (!dbType) throw new Error('不支持的字段类型。');
+  const { data,error } = await supabase.from('crm_custom_field_definitions').insert({
+    workspace_id:workspaceId,object_key:objectKey,field_key:field.name,label:field.label,
+    field_type:dbType,is_required:Boolean(field.required),is_unique:Boolean(field.unique),
+    options:field.options||[],created_by:userId,
+  }).select('id').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteFieldDefinition(fieldId) {
+  const { workspaceId } = await getWorkspaceContext();
+  const { error } = await supabase.from('crm_custom_field_definitions').delete()
+    .eq('id',fieldId).eq('workspace_id',workspaceId);
+  if (error) throw error;
+}
 export async function getCurrentUser() {
   if (!supabase) return null;
   const { data,error } = await supabase.auth.getUser();
