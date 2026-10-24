@@ -64,11 +64,13 @@ const entityMap = {
   '/orders/list': {
     table: 'crm_sales_orders', prefix: 'SO',
     select: ['order_number','account_id','quote_id','order_date','currency','total_amount','status'],
+    editSelect: ['customer_reference'],
+    editName: (record) => record.customer_reference || '',
+    update: (name) => ({customer_reference:name}),
     labels: ['订单编号','客户','关联报价','订单日期','币种','订单金额','状态'],
     embeds: ['account:crm_accounts(name,account_number)','quote:crm_quotes(quote_number)'],
     map: (record) => [record.order_number,record.account?.name || '—',record.quote?.quote_number || '—',record.order_date,record.currency,displayValue('total_amount',record.total_amount),record.status],
-    create: (_name, number) => ({ order_number:number, order_date:new Date().toISOString().slice(0,10), currency:'EUR', status:'draft' }),
-    editName: () => null,
+    create: (name, number) => ({ order_number:number, customer_reference:name, order_date:new Date().toISOString().slice(0,10), currency:'EUR', status:'draft' }),
     assignOwner: true,
   },
 };
