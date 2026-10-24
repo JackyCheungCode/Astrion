@@ -206,3 +206,6 @@ This section supersedes earlier high-level prototype-only summaries where later 
 
 - [x] Add workspace-scoped archive browsing and restore operations for CRM objects that support soft archive; expose the archive filter and restore action through Carbon controls.
 - [ ] Verify restore permissions and audit capture in database integration tests, and add an automated UI regression test for archive/restore.
+
+- [x] Implement actual client-side page slicing and controlled Carbon Pagination for CRM tables; reset to the first page when search or status filters change.
+- [ ] Verify archive browsing, restore, and pagination in the latest successful Vite build; an earlier build caught and fixed a syntax error in the archive-state declaration.
