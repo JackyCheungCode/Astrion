@@ -67,7 +67,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - Expanded Carbon-based navigation into AI acquisition, CRM, sales, orders/fulfillment, service, analytics, AI automation, data governance, and system configuration.
 - Added shared business module views for lists, search/filter, local demo drafts, opportunity board, analytics, custom-field configuration, workflow editor, AI assistant, user/role previews, and integrations.
 - Added a Supabase sign-in gate when environment variables are configured; without those variables the app remains in clearly labeled demo mode.
-- Added a workspace-scoped repository adapter for list/create operations on accounts, contacts, leads, opportunities, quotes, and sales orders. Lead conversion and accepted-quote-to-order actions call atomic database functions. Multi-workspace users are blocked until a workspace switcher exists.
+- Added a workspace-scoped repository adapter for list/create operations on accounts, contacts, leads, opportunities, quotes, and sales orders. Lead conversion and accepted-quote-to-order actions call atomic database functions. Multi-workspace users can choose an active workspace in the Carbon top bar; end-to-end runtime verification remains pending.
 - Custom-field definitions can be listed/created/deleted through the workspace metadata API when the signed-in role is authorized. Field value persistence, dynamic validation, edit/delete for ordinary records, pagination, and relationship hydration remain incomplete.
 - [x] GitHub Actions web build and Deno Edge Function type-check passed; migrations 00100–00190 and the original 52 pgTAP assertions passed before adding acquisition metering.
 
@@ -157,7 +157,7 @@ This section supersedes earlier high-level prototype-only summaries where later 
 ### Next tasks, in priority order
 
 1. Run and inspect the latest branch CI results; fix any build, migration, or test regressions before adding more features.
-2. Add workspace switching (or an explicit workspace-selection flow) instead of blocking users with more than one membership.
+2. Verify the Carbon workspace switcher and selected-workspace enforcement across CRM and acquisition endpoints; add regression tests for tenant switching.
 3. Expand database/RLS tests for cross-workspace relationships, role boundaries, immutable audit records, lead conversion, quote expiry/acceptance, and custom-field validation.
 4. Complete multi-field edit forms, archive restore, relationship pickers, pagination, and create-time required-field enforcement.
 5. Add AI provider spend budgets, usage/cost observability, provider health handling, and safe secret configuration; verify the actual Works API contract before enabling it.
@@ -178,4 +178,5 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Persist the selected workspace ID in browser storage; default to the first authorized membership when no valid selection exists. The repository adapter still validates membership server-side through Supabase RLS and workspace-scoped queries.
 - [x] Remount the current business/acquisition page after switching workspace so page-level data is reloaded under the newly selected tenant context.
 - [x] Add an inline Carbon error notification for membership-loading / storage failures and responsive top-bar styling for the selector.
-- [ ] Build and runtime verification of the workspace selector remains pending in this environment. The latest branch commit did not return CI status checks or PR-associated workflow runs through the available status endpoint; this is not evidence of a passing build.
+- [ ] Build and runtime verification of the workspace selector remains pending in this environment. The available status endpoint returned no check records for the inspected commit; this is not evidence of a passing build.
+- [x] Pass the selected workspace ID from the AI acquisition UI to the Edge Function and validate it against the authenticated user's active memberships; users with multiple memberships no longer fail solely because they belong to more than one workspace when a valid workspace is selected.
