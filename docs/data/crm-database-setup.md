@@ -15,8 +15,9 @@ The repository already has a canonical workspace-based schema. Use the existing 
 9. `20261024000180_workspace_role_write_permissions.sql` — prevent read-only/analyst roles from mutating business data and apply module-specific write roles.
 10. `20261024000190_workspace_relationship_guards.sql` — validate same-workspace core references and custom-field record scope.
 11. `20261024000200_ai_acquisition_usage_limits.sql` — enforce 20 requests/user/hour and 200 requests/workspace/hour with server-side metering.
+12. `20261024000210_sales_order_customer_reference.sql` — add a customer reference field to sales orders.
 
-The migration chain through 00200 and all 55 pgTAP schema/policy/transaction/usage assertions passed against a disposable local Supabase project in GitHub Actions. This does not mean a production project has been provisioned.
+The migration chain through 00200 and all 55 pgTAP schema/policy/transaction/usage assertions passed before the customer-reference field was added against a disposable local Supabase project in GitHub Actions. This does not mean a production project has been provisioned.
 
 ## Apply and verify
 
