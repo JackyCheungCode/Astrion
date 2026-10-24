@@ -1,6 +1,6 @@
 -- Run with Supabase CLI: supabase test db
 begin;
-select plan(56);
+select plan(58);
 
 select has_table('public','workspaces','workspaces table exists');
 select has_table('public','workspace_memberships','workspace_memberships table exists');
@@ -79,6 +79,9 @@ select has_function('public','reserve_acquisition_request',ARRAY['uuid','text[]'
 select has_function('public','complete_acquisition_request',ARRAY['uuid','uuid','text','integer','integer'],'acquisition request completion function exists');
 
 select has_column('public','crm_sales_orders','customer_reference','sales orders support customer reference editing');
+
+select has_trigger('public','crm_custom_field_values','crm_custom_field_values_rules_guard','custom field value validation trigger exists');
+select has_trigger('public','crm_custom_field_values','crm_custom_field_values_audit_event','custom field values are audited');
 
 select * from finish();
 rollback;
