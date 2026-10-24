@@ -3,13 +3,8 @@ import {
   Menu, Search, Notification, Help, UserAvatar, ChevronDown, ChevronRight,
   Close, Add, ArrowRight, Grid, Launch, Document
 } from '@carbon/icons-react';
-import { Button, TextInput, Tag } from '@carbon/react';
+import { Button, TextInput } from '@carbon/react';
 import './workspace.scss';
-
-/**
- * Central navigation registry. Change labels, routes, icons, or child entries here.
- * Keep routes stable when possible so bookmarks and integrations remain valid.
- */
 import { astrionNavigation } from './navigation/astrion-navigation.js';
 
 
