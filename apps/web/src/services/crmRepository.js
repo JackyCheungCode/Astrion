@@ -105,7 +105,7 @@ export async function listCrmRecords(path) {
   const { data, error } = await query.order('updated_at', { ascending: false }).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.columns.map((key) => displayValue(key, record[key])));
-  return { columns: config.labels, rows, count: rows.length };
+  return { columns: config.labels, rows, recordIds: (data || []).map((record) => record.id), count: rows.length };
 }
 
 export async function createCrmRecord(path, name) {
@@ -135,4 +135,39 @@ export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
   return data.user;
+}
+
+function businessNumber(prefix) {
+  const suffix = globalThis.crypto?.randomUUID?.().replace(/-/g,'').slice(0,10).toUpperCase()
+    || Math.random().toString(36).slice(2,12).toUpperCase();
+  return prefix + '-' + suffix;
+}
+
+export async function convertLeadToAccount(leadId) {
+  const { organizationId } = await getOrgContext();
+  const { data: lead, error: leadError } = await supabase
+    .from('crm_leads').select('id,organization_id,status').eq('id',leadId).eq('organization_id',organizationId).single();
+  if (leadError) throw leadError;
+  const { data, error } = await supabase.rpc('convert_lead_to_account', {
+    p_lead_id: lead.id,
+    p_account_number: businessNumber('ACC'),
+    p_contact_number: businessNumber('CON'),
+    p_create_opportunity: false,
+    p_opportunity_number: null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function convertQuoteToOrder(quoteId) {
+  const { organizationId } = await getOrgContext();
+  const { data: quote, error: quoteError } = await supabase
+    .from('crm_quotes').select('id,organization_id,status').eq('id',quoteId).eq('organization_id',organizationId).single();
+  if (quoteError) throw quoteError;
+  const { data, error } = await supabase.rpc('convert_accepted_quote_to_order', {
+    p_quote_id: quote.id,
+    p_order_number: businessNumber('SO'),
+  });
+  if (error) throw error;
+  return data;
 }
