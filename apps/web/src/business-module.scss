@@ -99,3 +99,7 @@
 .bm-row-actions { display:flex; align-items:center; gap:4px; }
 .bm-row-actions .cds--btn { white-space:nowrap; }
 @media(max-width:767px) { .bm-row-actions { flex-wrap:wrap; } }
+
+.bm-record-detail { display:flex; flex-direction:column; gap:18px; }.bm-record-detail-id { display:flex; flex-direction:column; gap:6px; padding-bottom:14px; border-bottom:1px solid #e0e0e0; }.bm-record-detail-id span,.bm-record-detail-grid span { color:#6f6f6f; font-size:11px; }.bm-record-detail-id code { overflow-wrap:anywhere; color:#393939; font-size:11px; }
+.bm-record-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 18px; }.bm-record-detail-grid>div { display:flex; flex-direction:column; gap:6px; min-width:0; padding:12px 0; border-bottom:1px solid #e0e0e0; }.bm-record-detail-grid strong { overflow-wrap:anywhere; color:#161616; font-size:13px; font-weight:500; }
+@media(max-width:480px) { .bm-record-detail-grid { grid-template-columns:1fr; } }
