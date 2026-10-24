@@ -91,8 +91,8 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, on
   const dataRows = filtered.map(({row,sourceIndex,recordId},i) => ({id:recordId||String(i),recordName:config.recordNames?.[sourceIndex],...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
   const exportCsv = () => {
     const csvRows=[columns,...filtered.map(({row})=>row)];
-    const csv=csvRows.map((row)=>row.map((value)=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\\r\\n');
-    const blob=new Blob(['\\uFEFF',csv],{type:'text/csv;charset=utf-8;'});
+    const csv=csvRows.map((row)=>row.map((value)=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+    const blob=new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8;'});
     const url=URL.createObjectURL(blob);
     const link=document.createElement('a');
     link.href=url;
