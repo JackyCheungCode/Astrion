@@ -371,7 +371,8 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
   const [created,setCreated] = useState([]);
   const [persistentConfig,setPersistentConfig] = useState(null);
   const [persistentError,setPersistentError] = useState('');
-  const [loadingRecords,setLoadingRecords] = useState(false);\n  const [showArchived,setShowArchived] = useState(false);
+  const [loadingRecords,setLoadingRecords] = useState(false);
+  const [showArchived,setShowArchived] = useState(false);
   const persistentSupported = supportsPersistentRecords(path);
   const displayColumns = persistentConfig?.columns || config.columns || defaultColumns;
   const openRecord = async (row) => {
