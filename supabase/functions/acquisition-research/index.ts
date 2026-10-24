@@ -210,7 +210,7 @@ Deno.serve(async (request) => {
 
   const providerStatuses: Array<Record<string, unknown>> = [];
   const rawResults: SearchResult[] = [];
-  const providerCalls = await Promise.all(providers.map(async (provider) => {
+  const providerCalls = await Promise.all(providers.map(async (provider): Promise<{provider: ProviderName; status: 'ok' | 'error'; results: SearchResult[]; message?: string}> => {
     try {
       const results = provider === "serper"
         ? await searchSerper(query, maxResults)
