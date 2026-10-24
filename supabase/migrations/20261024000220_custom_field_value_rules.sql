@@ -28,6 +28,7 @@ begin
   end if;
 
   if v_field.is_unique and new.value is not null and new.value<>'null'::jsonb then
+    perform pg_advisory_xact_lock(hashtextextended(new.workspace_id::text||':'||new.field_definition_id::text||':'||new.value::text,0));
     if exists (
       select 1 from public.crm_custom_field_values existing
       where existing.workspace_id=new.workspace_id
