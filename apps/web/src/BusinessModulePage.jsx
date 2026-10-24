@@ -89,13 +89,24 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, on
   const filtered = rows.map((row,sourceIndex)=>({row,sourceIndex,recordId:config.recordIds?.[sourceIndex]})).filter(({row}) => row.join(' ').toLowerCase().includes(query.toLowerCase()) && (status === 'all' || row.some((cell) => cell === status)));
   const headers = columns.map((header,key) => ({key,header}));
   const dataRows = filtered.map(({row,sourceIndex,recordId},i) => ({id:recordId||String(i),recordName:config.recordNames?.[sourceIndex],...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
+  const exportCsv = () => {
+    const csvRows=[columns,...filtered.map(({row})=>row)];
+    const csv=csvRows.map((row)=>row.map((value)=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\\r\\n');
+    const blob=new Blob(['\\uFEFF',csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;
+    link.download=`astrion-${(config.path||'records').replace(/[^a-z0-9-_]+/gi,'-')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
   return <TableContainer className="bm-table-container" title="">
     <TableToolbar><TableToolbarContent>
       <TableToolbarSearch persistent value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索当前列表" />
       <Select id="bm-status-filter" labelText="状态筛选" hideLabel size="md" value={status} onChange={(e)=>setStatus(e.target.value)}>
         <SelectItem value="all" text="全部状态"/><SelectItem value="有效" text="有效"/><SelectItem value="待审核" text="待审核"/><SelectItem value="处理中" text="处理中"/><SelectItem value="草稿" text="草稿"/>
       </Select>
-      <Button kind="tertiary" renderIcon={Download} onClick={()=>window.alert('当前为前端演示数据；接入后端后将导出真实记录。')}>导出</Button>
+      <Button kind="tertiary" renderIcon={Download} onClick={exportCsv}>导出筛选结果</Button>
       {config.canCreate!==false&&<Button renderIcon={Add} onClick={onCreate}>新建记录</Button>}
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
