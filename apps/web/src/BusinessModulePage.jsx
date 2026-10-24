@@ -3,7 +3,7 @@ import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
 } from '@carbon/icons-react';
-import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, archiveCrmRecord, setLeadStatus, listRecordCustomFields, saveRecordCustomField, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
+import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, archiveCrmRecord, setLeadStatus, listRecordCustomFields, saveRecordCustomField, getCrmImportFields, importCrmRows, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
 import {
   Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
@@ -260,6 +260,95 @@ function AssistantPanel() {
 function BoardPanel() {
   const columns = [['初步接洽',[['OPP-00311','销售自动化','Meridian Commerce','€18,000']]],['需求确认',[['OPP-00313','数据整合项目','BluePeak Systems','€42,500']]],['方案评估',[['OPP-00314','企业 CRM 平台','Northstar Industries','€84,000']]],['报价阶段',[['OPP-00312','客户服务升级','Asterion Medical','€26,000']]],['成交',[]]];
   return <div className="bm-board">{columns.map(([stage,items])=><section className="bm-board-column" key={stage}><div className="bm-board-title"><strong>{stage}</strong><Tag type="cool-gray">{items.length}</Tag></div>{items.map(([id,name,account,value])=><article className="bm-opportunity-card" key={id}><small>{id}</small><strong>{name}</strong><span>{account}</span><b>{value}</b><div><Tag type="blue">进行中</Tag></div></article>)}{!items.length&&<div className="bm-board-empty">暂无记录</div>}</section>)}</div>;
+}
+
+function parseCsvFile(text) {
+  const source=text.replace(/^\\uFEFF/,'');
+  const rows=[];
+  let row=[],cell='',quoted=false;
+  for(let index=0;index<source.length;index++){
+    const char=source[index];
+    if(char==='"'){
+      if(quoted&&source[index+1]==='"'){cell+='"';index++;}
+      else quoted=!quoted;
+    }else if(char===','&&!quoted){row.push(cell);cell='';}
+    else if((char==='\\n'||char==='\\r')&&!quoted){
+      if(char==='\\r'&&source[index+1]==='\\n')index++;
+      row.push(cell);
+      if(row.some((value)=>value.trim()!==''))rows.push(row);
+      row=[];cell='';
+    }else cell+=char;
+  }
+  if(cell!==''||row.length){row.push(cell);if(row.some((value)=>value.trim()!==''))rows.push(row);}
+  return rows;
+}
+
+const IMPORT_OBJECTS=[
+  {path:'/crm/accounts',label:'客户账户'},
+  {path:'/crm/contacts',label:'联系人'},
+  {path:'/crm/leads',label:'线索'},
+  {path:'/sales/opportunities',label:'商机'},
+  {path:'/sales/quotes',label:'报价'},
+  {path:'/orders/list',label:'销售订单'},
+];
+
+function CsvImportPanel({setNotice}) {
+  const [objectPath,setObjectPath]=useState('/crm/accounts');
+  const [headers,setHeaders]=useState([]);
+  const [csvRows,setCsvRows]=useState([]);
+  const [mapping,setMapping]=useState([]);
+  const [fileName,setFileName]=useState('');
+  const [error,setError]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [result,setResult]=useState(null);
+  const fields=getCrmImportFields(objectPath);
+  const autoMap=(header,path=objectPath)=>{
+    const available=getCrmImportFields(path);
+    return available.find((field)=>field.key.toLowerCase()===header.trim().toLowerCase()||field.label===header.trim())?.key||'__ignore__';
+  };
+  const handleObjectChange=(next)=>{
+    setObjectPath(next);
+    setMapping(headers.map((header)=>autoMap(header,next)));
+    setResult(null);
+  };
+  const handleFile=async(event)=>{
+    const file=event.target.files?.[0];
+    if(!file)return;
+    setError('');setResult(null);
+    try{
+      const parsed=parseCsvFile(await file.text());
+      if(parsed.length<2)throw new Error('CSV 文件至少需要一行表头和一行数据。');
+      const nextHeaders=parsed[0].map((header)=>header.trim());
+      if(nextHeaders.some((header)=>!header))throw new Error('CSV 表头不能包含空列名。');
+      const nextRows=parsed.slice(1).filter((row)=>row.some((value)=>value.trim()!==''));
+      if(!nextRows.length)throw new Error('CSV 文件没有数据行。');
+      setHeaders(nextHeaders);setCsvRows(nextRows);setMapping(nextHeaders.map((header)=>autoMap(header)));
+      setFileName(file.name);
+    }catch(err){setError(err?.message||'CSV 文件解析失败。');setHeaders([]);setCsvRows([]);setMapping([]);}
+  };
+  const handleImport=async()=>{
+    if(!supabaseConfigured){setError('请先配置 Supabase URL 与 publishable/anon key，并登录到工作空间。');return;}
+    if(!csvRows.length)return;
+    const selected=mapping.filter((key)=>key!=='__ignore__');
+    if(new Set(selected).size!==selected.length){setError('同一个目标字段不能映射多个 CSV 列。');return;}
+    if(!selected.length){setError('至少映射一列到 CRM 字段。');return;}
+    const records=csvRows.map((row)=>Object.fromEntries(mapping.map((target,index)=>[target,row[index]??'']).filter(([target])=>target!=='__ignore__')));
+    setBusy(true);setError('');
+    try{
+      const imported=await importCrmRows(objectPath,records);
+      setResult(imported);
+      setNotice(`CSV 导入完成：成功 ${imported.imported} 条，失败 ${imported.failed} 条。`);
+    }catch(err){setError(err?.message||'导入失败，请检查工作空间权限和字段映射。');}
+    finally{setBusy(false);}
+  };
+  return <div className="bm-import-panel">
+    <div className="bm-import-intro"><div><h2>CSV 数据导入</h2><p>先选择目标对象，再映射列。编号、工作空间与创建人由系统生成；关联字段必须使用同一工作空间内的 UUID。</p></div><Tag type={supabaseConfigured?'green':'cool-gray'}>{supabaseConfigured?'Supabase 已配置':'演示环境'}</Tag></div>
+    {!supabaseConfigured&&<InlineNotification kind="warning" lowContrast title="尚未连接数据库" subtitle="当前无法写入真实 CRM。配置 Supabase 环境变量并登录后即可导入。"/>}
+    <div className="bm-import-controls"><Select id="bm-import-object" labelText="导入到业务对象" value={objectPath} onChange={(event)=>handleObjectChange(event.target.value)}>{IMPORT_OBJECTS.map((item)=><SelectItem key={item.path} value={item.path} text={item.label}/>)}</Select><div className="bm-import-file"><label htmlFor="bm-import-file">选择 CSV 文件</label><input id="bm-import-file" type="file" accept=".csv,text/csv" onChange={handleFile}/>{fileName&&<span>{fileName}</span>}</div></div>
+    {headers.length>0&&<><div className="bm-import-summary"><strong>{csvRows.length} 行数据</strong><span>预览前 5 行；未映射列将被忽略。</span></div><div className="bm-import-mapping"><div className="bm-import-section-title">列映射</div>{headers.map((header,index)=><div className="bm-import-map-row" key={`${header}-${index}`}><strong>{header}</strong><Select id={`bm-import-map-${index}`} labelText="映射到字段" hideLabel value={mapping[index]||'__ignore__'} onChange={(event)=>setMapping((prev)=>prev.map((value,i)=>i===index?event.target.value:value))}><SelectItem value="__ignore__" text="忽略此列"/>{fields.map((field)=><SelectItem key={field.key} value={field.key} text={`${field.label} · ${field.key}`}/>)}</Select></div>)}</div><div className="bm-import-preview"><div className="bm-import-section-title">数据预览</div><div className="bm-import-preview-scroll"><table><thead><tr>{headers.map((header,index)=><th key={index}>{header}</th>)}</tr></thead><tbody>{csvRows.slice(0,5).map((row,rowIndex)=><tr key={rowIndex}>{headers.map((_,columnIndex)=><td key={columnIndex}>{row[columnIndex]??''}</td>)}</tr>)}</tbody></table></div></div><Button renderIcon={Add} disabled={busy||!supabaseConfigured} onClick={handleImport}>{busy?'正在导入…':`导入 ${csvRows.length} 行`}</Button></>}
+    {error&&<InlineNotification kind="error" lowContrast title="导入未完成" subtitle={error}/>}
+    {result&&<div className="bm-import-result"><InlineNotification kind={result.failed?'warning':'success'} lowContrast title="导入结果" subtitle={`成功 ${result.imported} 条，失败 ${result.failed} 条。每一行独立提交，失败行不会回滚已成功的记录。`}/>{result.errors.length>0&&<ul>{result.errors.slice(0,20).map((item,index)=><li key={index}>第 {item.row} 行：{item.message}</li>)}</ul>}</div>}
+  </div>;
 }
 
 export default function BusinessModulePage({path,navigate,setNotice,notice}) {
