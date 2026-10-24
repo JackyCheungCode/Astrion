@@ -173,6 +173,16 @@ export async function updateCrmRecord(path,recordId,name) {
   return data;
 }
 
+export async function setLeadStatus(leadId,status) {
+  const allowed=['new','open','working','qualified','nurturing','disqualified','recycled'];
+  if(!allowed.includes(status)) throw new Error('不支持的线索状态。');
+  const {workspaceId,userId}=await getWorkspaceContext();
+  const {data,error}=await supabase.from('crm_leads').update({status,updated_by:userId})
+    .eq('id',leadId).eq('workspace_id',workspaceId).select('id').single();
+  if(error) throw error;
+  return data;
+}
+
 export async function convertLeadToAccount(leadId) {
   const { workspaceId } = await getWorkspaceContext();
   const { data:lead,error:leadError } = await supabase.from('crm_leads')
