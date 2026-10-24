@@ -126,3 +126,6 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add initial per-user/per-workspace acquisition request limits (20/user/hour, 200/workspace/hour) with atomic reservation and usage status tracking.
 
 - [x] Add CRM record detail views and primary-field edit operations for accounts, contacts, leads, opportunities, and quote notes; complete field-by-field editing and archive/delete flows remain pending.
+
+- [x] Route AI acquisition review, scoring, research, and contact pages to workspace-scoped CRM records instead of the generic task view.
+- [x] Add lead qualification/disqualification actions; conversion is surfaced only after a lead is marked qualified.
