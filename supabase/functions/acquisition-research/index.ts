@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveActiveWorkspace, scoreEvidenceQuality } from "../_shared/acquisition-utils.ts";
 
 type ProviderName = "serper" | "tavily";
 type SearchResult = {
@@ -112,18 +113,6 @@ async function searchTavily(query: string, maxResults: number): Promise<SearchRe
   return normalizeTavily(await response.json(), maxResults);
 }
 
-function scoreEvidenceQuality(result: SearchResult): number {
-  let score = 15;
-  if (result.providers.length > 1) score += 25;
-  if (result.title.trim().length >= 15) score += 10;
-  if (result.snippet.trim().length >= 240) score += 25;
-  else if (result.snippet.trim().length >= 100) score += 18;
-  else if (result.snippet.trim().length >= 40) score += 10;
-  if (result.score !== undefined) score += Math.round(Math.max(0, Math.min(1, result.score)) * 15);
-  if (result.url.startsWith("https://")) score += 10;
-  return Math.max(0, Math.min(100, score));
-}
-
 function mergeResults(results: SearchResult[]): SearchResult[] {
   const merged = new Map<string, SearchResult>();
   for (const result of results) {
@@ -229,18 +218,16 @@ Deno.serve(async (request) => {
   if (membershipError) return jsonResponse({ error: "Could not verify workspace membership" }, 403);
   if (!memberships?.length) return jsonResponse({ error: "This user is not a member of a workspace" }, 403);
 
-  const selectedMembership = requestedWorkspaceId
-    ? memberships.find((membership) => membership.workspace_id === requestedWorkspaceId)
-    : memberships.length === 1 ? memberships[0] : null;
-  if (!selectedMembership) {
+  const workspaceResolution = resolveActiveWorkspace(memberships, requestedWorkspaceId);
+  if (!workspaceResolution.ok) {
     return jsonResponse({
-      error: requestedWorkspaceId
+      error: workspaceResolution.reason === "not_member"
         ? "The selected workspace is not an active membership for this user"
         : "Workspace selection is required before searching",
-    }, requestedWorkspaceId ? 403 : 409);
+    }, workspaceResolution.reason === "not_member" ? 403 : 409);
   }
 
-  const { workspace_id: workspaceId, role_key: role } = selectedMembership;
+  const { workspace_id: workspaceId, role_key: role } = workspaceResolution.membership;
   if (persistCandidates && !["owner", "admin", "sales_manager", "sales_rep", "marketing"].includes(role)) {
     return jsonResponse({ error: "Your workspace role cannot create lead records" }, 403);
   }
