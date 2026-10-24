@@ -148,7 +148,7 @@ export async function listCrmRecords(path) {
   const { data,error } = await query.order(config.orderBy||'updated_at',{ascending:false}).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.map ? config.map(record) : config.select.map((key) => displayValue(key,record[key])));
-  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), count:rows.length };
+  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), canArchive:Boolean(config.archived), count:rows.length };
 }
 
 export async function createCrmRecord(path,name) {
@@ -179,6 +179,17 @@ export async function updateCrmRecord(path,recordId,name) {
     .eq('id',recordId).eq('workspace_id',workspaceId).select('id').single();
   if(error) throw error;
   return data;
+}
+
+export async function archiveCrmRecord(path,recordId) {
+  const config=entityMap[path];
+  if(!config?.archived) throw new Error('该模块暂不支持归档。');
+  const {workspaceId,userId}=await getWorkspaceContext();
+  const payload={archived_at:new Date().toISOString()};
+  if(config.hasAuditColumns) payload.updated_by=userId;
+  const {error}=await supabase.from(config.table).update(payload)
+    .eq('id',recordId).eq('workspace_id',workspaceId);
+  if(error) throw error;
 }
 
 export async function setLeadStatus(leadId,status) {
