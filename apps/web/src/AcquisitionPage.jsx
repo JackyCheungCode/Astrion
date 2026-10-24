@@ -33,7 +33,7 @@ function CarbonSelect({ id, label, value, options, onChange, helperText }) {
   </div>;
 }
 
-export default function AcquisitionPage({ path, navigate, setNotice }) {
+export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [activeTab, setActiveTab] = useState(path.endsWith('/targets') ? 'targets' : path.endsWith('/discovery') ? 'discovery' : 'tasks');
   const [showBuilder, setShowBuilder] = useState(false);
   const [taskName, setTaskName] = useState('欧洲中型 SaaS 企业');
@@ -68,6 +68,7 @@ export default function AcquisitionPage({ path, navigate, setNotice }) {
 
   const pageTitle = activeTab === 'targets' ? '目标客户画像' : activeTab === 'discovery' ? '线索发现' : '获客任务';
   return <div className="acq-page">
+    {notice && <div className="acq-inline-notice" role="status"><span>{notice}</span><Button kind="ghost" size="sm" onClick={() => setNotice('')}>关闭</Button></div>}
     <div className="acq-intro-row">
       <div>
         <div className="acq-eyebrow"><span className="acq-eyebrow-dot" /> AI 获客工作台</div>
