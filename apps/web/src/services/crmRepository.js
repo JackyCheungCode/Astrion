@@ -148,7 +148,7 @@ export async function listCrmRecords(path) {
   const { data,error } = await query.order(config.orderBy||'updated_at',{ascending:false}).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.map ? config.map(record) : config.select.map((key) => displayValue(key,record[key])));
-  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), canArchive:Boolean(config.archived), count:rows.length };
+  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), canArchive:Boolean(config.archived), supportsCustomFields:Boolean(config.objectKey), count:rows.length };
 }
 
 export async function createCrmRecord(path,name) {
