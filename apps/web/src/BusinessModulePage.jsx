@@ -1,0 +1,169 @@
+import { useMemo, useState } from 'react';
+import {
+  Add, Search, Filter, Download, OverflowMenuHorizontal, ChevronDown, ChevronRight,
+  Building, UserMultiple, UserFollow, Bullseye, Task, Calendar, ChartLine, Settings,
+  DataBase, Flow, Document, CheckmarkFilled, WarningAlt, Renew, View, Edit, TrashCan,
+  Save, Close, Launch, ArrowUpRight, Time, Tag as TagIcon
+} from '@carbon/icons-react';
+import {
+  Button, TextInput, Select, SelectItem, Tag, DataTable, Table, TableHead,
+  TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
+  TableToolbarSearch, TableContainer, Pagination, Tile, InlineNotification,
+  Tabs, TabList, Tab, TabPanels, TabPanel, Modal, TextArea, NumberInput,
+  Checkbox, Toggle, Dropdown
+} from '@carbon/react';
+import './business-module.scss';
+
+const records = {
+  '/dashboard': {
+    title: '工作总览', description: '统一查看客户关系、销售进度与运营任务。',
+    metrics: [['客户账户', '1,284', '本地演示数据'], ['活跃商机', '86', '本地演示数据'], ['待跟进任务', '24', '本地演示数据'], ['本月成交额', '€248,600', '本地演示数据']],
+    shortcuts: [['客户账户','/crm/accounts'],['联系人','/crm/contacts'],['线索管理','/crm/leads'],['商机管理','/sales/opportunities'],['自定义字段','/settings/fields'],['自动化工作流','/ai/workflows']]
+  },
+  '/crm/accounts': { title:'客户账户', description:'统一管理企业客户、组织层级、客户等级与主数据。', columns:['账户编号','客户名称','行业','地区','客户等级','负责人','状态'], rows:[['ACC-000104','Northstar Industries','制造业','德国','战略客户','销售团队 A','有效'],['ACC-000103','BluePeak Systems','软件 / SaaS','波兰','重点客户','Anna Kowalska','有效'],['ACC-000102','Meridian Commerce','电子商务','法国','标准客户','销售团队 B','有效'],['ACC-000101','Asterion Medical','医疗健康','荷兰','重点客户','Marek Nowak','待审核'],['ACC-000100','Vertex Logistics','物流','西班牙','标准客户','销售团队 A','有效']] },
+  '/crm/contacts': { title:'联系人', description:'管理客户联系人、职位、决策角色与业务互动。', columns:['联系人编号','姓名','所属公司','职位','业务邮箱','地区','状态'], rows:[['CON-00251','Anna Weber','Northstar Industries','采购总监','anna.weber@example.com','德国','已验证'],['CON-00250','Piotr Zieliński','BluePeak Systems','CTO','piotr.z@example.com','波兰','待验证'],['CON-00249','Claire Martin','Meridian Commerce','运营负责人','claire.m@example.com','法国','已验证'],['CON-00248','Sofia de Vries','Asterion Medical','数字化平台主管','sofia.d@example.com','荷兰','待验证']] },
+  '/crm/leads': { title:'线索管理', description:'管理线索来源、资格、评分、分配及客户转化。', columns:['线索编号','线索名称','公司','来源','评分','负责人','状态'], rows:[['LEA-00842','数字化升级需求','Northstar Industries','AI 获客',92,'Anna Weber','待审核'],['LEA-00841','CRM 现代化项目','BluePeak Systems','官网',84,'销售团队 A','已分配'],['LEA-00840','供应链自动化','Vertex Logistics','Serper',78,'销售团队 B','新建'],['LEA-00839','客户数据平台','Meridian Commerce','Tavily',73,'Anna Weber','培育中']] },
+  '/sales/board': { title:'商机看板', description:'以销售阶段管理商机推进、预计成交与风险。', board:true },
+  '/sales/opportunities': { title:'商机管理', description:'跟踪商机金额、销售阶段、成交概率与预计关闭日期。', columns:['商机编号','商机名称','客户','销售阶段','预计金额','概率','预计关闭'], rows:[['OPP-00314','企业 CRM 平台','Northstar Industries','方案评估','€84,000','60%','2026-11-20'],['OPP-00313','数据整合项目','BluePeak Systems','需求确认','€42,500','35%','2026-12-05'],['OPP-00312','客户服务升级','Asterion Medical','报价阶段','€26,000','75%','2026-11-08'],['OPP-00311','销售自动化','Meridian Commerce','初步接洽','€18,000','20%','2026-12-18']] },
+  '/sales/quotes': { title:'报价管理', description:'管理报价版本、价格条件、折扣和审批状态。', columns:['报价编号','客户','关联商机','币种','报价金额','版本','状态'], rows:[['QUO-00182','Northstar Industries','OPP-00314','EUR','€84,000','V2','待审批'],['QUO-00181','Asterion Medical','OPP-00312','EUR','€26,000','V1','已发送'],['QUO-00180','BluePeak Systems','OPP-00313','EUR','€42,500','V1','草稿']] },
+  '/orders/list': { title:'订单管理', description:'管理销售订单、商业条款、交付状态与关联财务记录。', columns:['订单编号','客户','订单日期','币种','订单金额','履约状态','状态'], rows:[['SO-00092','Northstar Industries','2026-10-16','EUR','€84,000','准备履约','已确认'],['SO-00091','Asterion Medical','2026-10-14','EUR','€26,000','部分发货','处理中'],['SO-00090','Meridian Commerce','2026-10-09','EUR','€18,000','已交付','已完成']] },
+  '/orders/fulfillment': { title:'发货与履约', description:'跟踪订单行、发货、交付、异常和退货。', columns:['履约编号','订单编号','客户','计划日期','承运商','进度','状态'], rows:[['FUL-00044','SO-00092','Northstar Industries','2026-10-28','待分配','准备中','待处理'],['FUL-00043','SO-00091','Asterion Medical','2026-10-25','DHL','部分发货','处理中']] },
+  '/orders/payments': { title:'收款记录', description:'查看收款、分配、退款与对账状态。', columns:['收款编号','客户','关联订单','金额','方式','收款日期','状态'], rows:[['PAY-00081','Asterion Medical','SO-00091','€13,000','银行转账','2026-10-18','已核对'],['PAY-00080','Meridian Commerce','SO-00090','€18,000','银行转账','2026-10-12','已分配']] },
+  '/analytics': { title:'分析报表', description:'从销售漏斗、获客渠道、收入与团队绩效洞察业务。', analytics:true },
+  '/analytics/acquisition': { title:'获客分析', description:'比较获客来源、线索质量与渠道转化。', analytics:true },
+  '/analytics/funnel': { title:'销售漏斗', description:'查看各阶段转化率、停留时间与流失原因。', analytics:true },
+  '/analytics/revenue': { title:'收入分析', description:'按客户、产品、地区与时间维度查看收入。', analytics:true },
+  '/ai/assistant': { title:'AI 助手', description:'以客户上下文为基础，生成研究摘要、行动建议与跟进草稿。', assistant:true },
+  '/ai/workflows': { title:'自动化工作流', description:'编排触发器、条件、审批和跨模块动作。', workflows:true },
+  '/ai/runs': { title:'执行记录', description:'查看自动化运行状态、日志、重试与错误。', columns:['执行编号','工作流','触发时间','耗时','执行人','状态'], rows:[['RUN-00318','新线索评分','2026-10-24 08:12','2.4 秒','系统','成功'],['RUN-00317','客户数据去重','2026-10-24 08:05','1.1 秒','系统','成功'],['RUN-00316','高意向提醒','2026-10-24 07:54','—','系统','等待配置']] },
+  '/settings/fields': { title:'字段与对象配置', description:'定义业务对象、字段类型、选项、必填规则、权限和页面布局。', fields:true },
+  '/settings/workspace': { title:'工作空间设置', description:'配置企业资料、区域、语言、时区与默认业务选项。', settings:true },
+  '/settings/users': { title:'用户与权限', description:'管理用户、角色、团队、记录访问范围与字段权限。', settings:true },
+  '/settings/integrations': { title:'集成配置', description:'管理搜索数据源、AI 服务、外部系统和 Webhook。', integrations:true },
+};
+
+const defaultColumns = ['编号','名称','所属对象','负责人','状态','更新时间'];
+const defaultRows = [['REC-0001','示例业务记录','客户账户','系统管理员','待配置','2026-10-24'],['REC-0002','示例业务记录','联系人','销售团队 A','待配置','2026-10-23'],['REC-0003','示例业务记录','商机','销售团队 B','待配置','2026-10-22']];
+const statusType = (value) => /有效|已验证|已完成|成功|已确认|已核对|已分配/.test(value) ? 'green' : /待审核|待审批|待处理|处理中|等待|准备中/.test(value) ? 'warm-gray' : /风险|失败|拒绝|逾期/.test(value) ? 'red' : 'blue';
+
+function Metric({label,value,foot}) { return <Tile className="bm-metric"><span>{label}</span><strong>{value}</strong><small>{foot}</small></Tile>; }
+
+function GenericTable({ config, onCreate }) {
+  const [query,setQuery] = useState('');
+  const [status,setStatus] = useState('all');
+  const [pageSize,setPageSize] = useState(10);
+  const columns = config.columns || defaultColumns;
+  const rows = config.rows || defaultRows;
+  const filtered = rows.filter((row) => row.join(' ').toLowerCase().includes(query.toLowerCase()) && (status === 'all' || row.some((cell) => cell === status)));
+  const headers = columns.map((header,key) => ({key,header}));
+  const dataRows = filtered.map((row,i) => ({id:String(i),...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
+  return <TableContainer className="bm-table-container" title="">
+    <TableToolbar><TableToolbarContent>
+      <TableToolbarSearch persistent value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索当前列表" />
+      <Select id="bm-status-filter" labelText="状态筛选" hideLabel size="md" value={status} onChange={(e)=>setStatus(e.target.value)}>
+        <SelectItem value="all" text="全部状态"/><SelectItem value="有效" text="有效"/><SelectItem value="待审核" text="待审核"/><SelectItem value="处理中" text="处理中"/><SelectItem value="草稿" text="草稿"/>
+      </Select>
+      <Button kind="tertiary" renderIcon={Download} onClick={()=>window.alert('当前为前端演示数据；接入后端后将导出真实记录。')}>导出</Button>
+      <Button renderIcon={Add} onClick={onCreate}>新建记录</Button>
+    </TableToolbarContent></TableToolbar>
+    <Table size="lg" useZebraStyles={false}>
+      <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
+      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onCreate(row)}>{row[key]}</button> : key === String(columns.length-1) ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="记录操作" onClick={()=>onCreate(row)}/></TableCell></TableRow>)}</TableBody>
+    </Table>
+    <div className="bm-table-footer"><span>显示 {filtered.length} 条记录 · 演示数据</span><Pagination pageSizes={[5,10,20]} pageSize={pageSize} totalItems={filtered.length} onChange={({pageSize:nextSize})=>setPageSize(nextSize)} /></div>
+  </TableContainer>;
+}
+
+function FieldConfiguration() {
+  const [objectName,setObjectName] = useState('account');
+  const [fieldName,setFieldName] = useState('');
+  const [label,setLabel] = useState('');
+  const [fieldType,setFieldType] = useState('text');
+  const [required,setRequired] = useState(false);
+  const [unique,setUnique] = useState(false);
+  const [fields,setFields] = useState([
+    {name:'account_number',label:'账户编号',type:'自动编号',required:true,unique:true},
+    {name:'account_name',label:'客户名称',type:'文本',required:true,unique:false},
+    {name:'industry',label:'行业',type:'单选下拉框',required:false,unique:false},
+    {name:'annual_revenue',label:'年收入',type:'金额',required:false,unique:false},
+    {name:'owner_id',label:'负责人',type:'用户关联',required:false,unique:false},
+  ]);
+  const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
+  const addField = () => {
+    if (!fieldName.trim() || !label.trim()) return;
+    setFields((prev)=>[...prev,{name:fieldName.trim().replace(/[^a-zA-Z0-9_]/g,'_'),label,type:typeLabels[fieldType],required,unique}]);
+    setFieldName('');setLabel('');setRequired(false);setUnique(false);
+  };
+  return <div className="bm-field-config">
+    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>当前修改仅保存在浏览器内存中；正式保存需要连接元数据 API。</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>setObjectName(e.target.value)}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
+    <div className="bm-field-list"><div className="bm-field-head"><span>字段标签</span><span>API 名称</span><span>类型</span><span>规则</span><span>操作</span></div>
+      {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}</small></div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={['account_number','account_name'].includes(field.name)} onClick={()=>setFields((prev)=>prev.filter((_,i)=>i!==index))}/></div>)}
+    </div>
+    <div className="bm-add-field"><h3>新增字段</h3><div className="bm-field-form">
+      <TextInput id="bm-field-label" labelText="字段标签" value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="例如：客户优先级"/>
+      <TextInput id="bm-field-api" labelText="API 名称" value={fieldName} onChange={(e)=>setFieldName(e.target.value)} placeholder="例如：customer_priority"/>
+      <Select id="bm-field-type" labelText="字段类型" value={fieldType} onChange={(e)=>setFieldType(e.target.value)}>{Object.entries(typeLabels).map(([value,text])=><SelectItem key={value} value={value} text={text}/>)}</Select>
+    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(e,{checked})=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(e,{checked})=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!fieldName.trim()||!label.trim()}>添加字段</Button></div></div>
+  </div>;
+}
+
+function AnalyticsPanel() {
+  const bars = [['AI 获客',78],['官网',62],['合作伙伴',48],['活动营销',35],['人工录入',22]];
+  return <div className="bm-analytics"><div className="bm-analytics-grid"><Tile><span className="bm-muted">线索总量</span><strong>1,248</strong><small>演示数据</small></Tile><Tile><span className="bm-muted">线索转化率</span><strong>18.6%</strong><small>演示数据</small></Tile><Tile><span className="bm-muted">平均销售周期</span><strong>34 天</strong><small>演示数据</small></Tile><Tile><span className="bm-muted">加权商机金额</span><strong>€428k</strong><small>演示数据</small></Tile></div><Tile className="bm-chart-tile"><h2>线索来源表现</h2><p>按来源比较线索贡献（示例指数）</p>{bars.map(([name,value])=><div className="bm-bar-row" key={name}><span>{name}</span><div><i style={{width:value+'%'}}/></div><strong>{value}</strong></div>)}</Tile><Tile className="bm-chart-tile"><h2>销售漏斗</h2><p>从初步接洽到成交的阶段分布（示例数据）</p><div className="bm-funnel">{[['初步接洽',100],['需求确认',76],['方案评估',54],['报价阶段',32],['成交',18]].map(([label,value])=><div key={label} style={{width:value+'%'}}><span>{label}</span><strong>{value}%</strong></div>)}</div></Tile></div>;
+}
+
+function WorkflowPanel() {
+  const [steps,setSteps] = useState([{id:1,type:'trigger',label:'触发：新线索创建'},{id:2,type:'condition',label:'条件：线索评分 ≥ 70'},{id:3,type:'action',label:'动作：分配负责人并发送提醒'}]);
+  return <div className="bm-workflow"><div className="bm-workflow-head"><div><h2>工作流设计器</h2><p>使用可视化步骤定义跨模块自动化。</p></div><Button renderIcon={Add} onClick={()=>setSteps((prev)=>[...prev,{id:Date.now(),type:'action',label:'动作：更新业务记录'}])}>添加步骤</Button></div>{steps.map((step,index)=><div className="bm-workflow-step" key={step.id}><div className={'bm-step-number '+step.type}>{index+1}</div><div><strong>{step.label}</strong><small>{step.type==='trigger'?'事件触发器':step.type==='condition'?'业务条件':'执行动作'}</small></div><Button kind="ghost" hasIconOnly renderIcon={TrashCan} iconDescription="移除步骤" onClick={()=>setSteps((prev)=>prev.filter((x)=>x.id!==step.id))}/></div>)}<InlineNotification kind="info" lowContrast title="执行器尚未连接" subtitle="当前为前端交互原型，不会执行外部操作或修改真实业务数据。"/></div>;
+}
+
+function SettingsPanel({type}) {
+  const [saved,setSaved] = useState(false);
+  const [region,setRegion] = useState('eu');
+  const [language,setLanguage] = useState('zh-CN');
+  const [timezone,setTimezone] = useState('Europe/Warsaw');
+  const [provider,setProvider] = useState('serper-tavily');
+  if(type==='integrations') return <div className="bm-settings-grid">{[['Serper','搜索发现 API','未连接'],['Tavily','网页研究与内容提取','未连接'],['Workers API','流程编排与服务端代理','未连接'],['Supabase','身份、数据库与存储','需检查配置']].map(([name,desc,status])=><Tile className="bm-integration" key={name}><div className="bm-integration-head"><strong>{name}</strong><Tag type="cool-gray">{status}</Tag></div><p>{desc}</p><Button kind="tertiary" renderIcon={Settings} onClick={()=>setSaved(true)}>配置连接</Button></Tile>)}{saved&&<InlineNotification kind="info" lowContrast title="连接配置尚未保存" subtitle="请在服务端接入后安全保存密钥；不要将 API Key 写入前端。"/>}</div>;
+  if(type==='users') return <div className="bm-settings-grid">{[['系统管理员','管理员','全部模块'],['销售团队 A','销售经理','客户与销售'],['营销运营','营销分析师','AI 获客与报表']].map(([name,role,scope])=><Tile className="bm-user-tile" key={name}><div className="bm-user-avatar">{name.slice(0,1)}</div><div><strong>{name}</strong><p>{role}</p><small>{scope}</small></div><Button kind="ghost" hasIconOnly renderIcon={Edit} iconDescription="编辑用户" onClick={()=>setSaved(true)}/></Tile>)}{saved&&<InlineNotification kind="info" lowContrast title="权限管理待接入" subtitle="用户列表为示例数据，权限更改尚未写入服务端。"/>}</div>;
+  return <div className="bm-settings-form"><h2>工作空间默认值</h2><p>以选项为主，统一组织地区、语言与时区。</p><div className="bm-field-form"><Select id="bm-region" labelText="默认地区" value={region} onChange={(e)=>setRegion(e.target.value)}><SelectItem value="eu" text="欧洲"/><SelectItem value="na" text="北美"/><SelectItem value="apac" text="亚太地区"/><SelectItem value="global" text="全球"/></Select><Select id="bm-language" labelText="界面语言" value={language} onChange={(e)=>setLanguage(e.target.value)}><SelectItem value="zh-CN" text="简体中文"/><SelectItem value="en" text="English"/><SelectItem value="pl" text="Polski"/></Select><Select id="bm-timezone" labelText="默认时区" value={timezone} onChange={(e)=>setTimezone(e.target.value)}><SelectItem value="Europe/Warsaw" text="Europe/Warsaw"/><SelectItem value="Europe/Berlin" text="Europe/Berlin"/><SelectItem value="UTC" text="UTC"/></Select></div><Button renderIcon={Save} onClick={()=>setSaved(true)}>保存偏好</Button>{saved&&<InlineNotification kind="success" lowContrast title="偏好已在当前页面暂存" subtitle="后端持久化尚未连接。"/>}</div>;
+}
+
+function AssistantPanel() {
+  const [prompt,setPrompt] = useState('');
+  const [answer,setAnswer] = useState('');
+  return <div className="bm-assistant"><div className="bm-assistant-intro"><div className="bm-ai-mark">AI</div><div><h2>你的业务 AI 助手</h2><p>基于 CRM 上下文生成研究提纲、客户摘要和销售行动草稿。</p></div></div><div className="bm-prompt-chips">{['总结本周高意向线索','找出即将到期的商机','生成客户跟进邮件草稿'].map(x=><button key={x} onClick={()=>setPrompt(x)}>{x}<ArrowUpRight size={16}/></button>)}</div><TextArea id="bm-assistant-prompt" labelText="向 Astrion 提问" value={prompt} onChange={(e)=>setPrompt(e.target.value)} placeholder="例如：总结评分最高的 10 个潜客，并列出每个评分的证据来源。" rows={4}/><Button renderIcon={ArrowUpRight} onClick={()=>setAnswer(prompt.trim()?'AI Gateway 尚未连接。已保留你的问题在当前界面，未发送到外部服务。':'请先输入问题。')}>生成草稿</Button>{answer&&<InlineNotification kind="info" lowContrast title="AI 服务未连接" subtitle={answer}/>}</div>;
+}
+
+function BoardPanel() {
+  const columns = [['初步接洽',[['OPP-00311','销售自动化','Meridian Commerce','€18,000']]],['需求确认',[['OPP-00313','数据整合项目','BluePeak Systems','€42,500']]],['方案评估',[['OPP-00314','企业 CRM 平台','Northstar Industries','€84,000']]],['报价阶段',[['OPP-00312','客户服务升级','Asterion Medical','€26,000']]],['成交',[]]];
+  return <div className="bm-board">{columns.map(([stage,items])=><section className="bm-board-column" key={stage}><div className="bm-board-title"><strong>{stage}</strong><Tag type="cool-gray">{items.length}</Tag></div>{items.map(([id,name,account,value])=><article className="bm-opportunity-card" key={id}><small>{id}</small><strong>{name}</strong><span>{account}</span><b>{value}</b><div><Tag type="blue">进行中</Tag></div></article>)}{!items.length&&<div className="bm-board-empty">暂无记录</div>}</section>)}</div>;
+}
+
+export default function BusinessModulePage({path,navigate,setNotice,notice}) {
+  const config = records[path] || {title:path.split('/').filter(Boolean).slice(-1)[0]?.replace(/[-_]/g,' ') || '工作总览',description:'企业业务模块工作区。',columns:defaultColumns,rows:defaultRows};
+  const [createOpen,setCreateOpen] = useState(false);
+  const [draft,setDraft] = useState({name:'',type:'standard',owner:'team-a',status:'new',industry:'software'});
+  const [created,setCreated] = useState([]);
+  const saveDraft = () => { if(!draft.name.trim()){setNotice('请填写记录名称。');return;} setCreated((prev)=>[{...draft,id:'NEW-'+String(prev.length+1).padStart(4,'0')},...prev]);setCreateOpen(false);setNotice('记录已添加到当前页面的本地演示列表，尚未保存到服务端。'); };
+  const title = config.title;
+  return <div className="bm-page">
+    <div className="bm-breadcrumb"><span>工作空间</span><ChevronRight size={12}/><span>{title}</span></div>
+    <div className="bm-page-heading"><div><div className="bm-eyebrow">ASTRION BUSINESS PLATFORM</div><h1>{title}</h1><p>{config.description}</p></div><div className="bm-heading-actions"><Button kind="tertiary" renderIcon={Download} onClick={()=>setNotice('导出将在接入真实数据服务后启用。')}>导出</Button><Button renderIcon={Add} onClick={()=>setCreateOpen(true)}>新建</Button></div></div>
+    {notice&&<InlineNotification className="bm-notice" kind="info" lowContrast title="提示" subtitle={notice} onCloseButtonClick={()=>setNotice('')}/>}
+    {config.metrics&&<div className="bm-metrics">{config.metrics.map(([label,value,foot])=><Metric key={label} label={label} value={value} foot={foot}/>)}</div>}
+    {config.shortcuts&&<div className="bm-dashboard-grid"><Tile className="bm-shortcut-tile"><div className="bm-section-heading"><div><h2>快捷入口</h2><p>常用业务对象与配置</p></div><Launch size={20}/></div><div className="bm-shortcut-grid">{config.shortcuts.map(([label,route])=><button key={route} onClick={()=>navigate(route)}><span>{label}</span><ChevronRight size={18}/></button>)}</div></Tile><Tile className="bm-shortcut-tile"><div className="bm-section-heading"><div><h2>业务流程</h2><p>从目标发现到收入确认</p></div><Flow size={20}/></div><div className="bm-process-flow">{['AI 获客','线索','客户','商机','报价','订单'].map((label,i)=><button key={label} onClick={()=>navigate(['/acquisition/discovery','/crm/leads','/crm/accounts','/sales/opportunities','/sales/quotes','/orders/list'][i])}><span>{i+1}</span>{label}</button>)}</div></Tile><Tile className="bm-shortcut-tile"><div className="bm-section-heading"><div><h2>最近更新</h2><p>演示记录，不代表生产数据</p></div><Time size={20}/></div><div className="bm-recent-list">{[['客户账户','Northstar Industries','今天 08:30'],['商机','企业 CRM 平台','今天 08:12'],['线索','数字化升级需求','今天 07:55']].map((x)=><div key={x[1]}><span><strong>{x[1]}</strong><small>{x[0]}</small></span><time>{x[2]}</time></div>)}</div></Tile></div>}
+    {config.board&&<BoardPanel/>}
+    {config.analytics&&<AnalyticsPanel/>}
+    {config.fields&&<FieldConfiguration/>}
+    {config.workflows&&<WorkflowPanel/>}
+    {config.assistant&&<AssistantPanel/>}
+    {config.settings&&<SettingsPanel type="workspace"/>}
+    {path==='/settings/users'&&<SettingsPanel type="users"/>}
+    {config.integrations&&<SettingsPanel type="integrations"/>}
+    {config.columns&&<><div className="bm-list-summary"><div><strong>{config.rows?.length||0} 条记录</strong><span> · 默认视图</span></div><div><Tag type="cool-gray">演示数据</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={()=>setNotice('当前列表已刷新演示数据。')}>刷新</Button></div></div><GenericTable config={{...config,rows:[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])]}} onCreate={(row)=>{setDraft((prev)=>({...prev,name:row?.['1']||row?.[1]||''}));setCreateOpen(true);}}/></>}
+    <div className="bm-page-foot"><span><DataBase size={14}/> Astrion 元数据驱动业务界面</span><span>当前为前端原型 · 真实持久化、权限校验与服务端 API 尚未连接</span></div>
+    <Modal open={createOpen} modalHeading="新建业务记录" primaryButtonText="保存草稿" secondaryButtonText="取消" onRequestClose={()=>setCreateOpen(false)} onRequestSubmit={saveDraft} size="md">
+      <div className="bm-create-form"><TextInput id="bm-record-name" labelText="记录名称" value={draft.name} onChange={(e)=>setDraft((prev)=>({...prev,name:e.target.value}))} placeholder="输入名称"/><Select id="bm-record-type" labelText="记录类型" value={draft.type} onChange={(e)=>setDraft((prev)=>({...prev,type:e.target.value}))}><SelectItem value="standard" text="标准记录"/><SelectItem value="strategic" text="战略客户"/><SelectItem value="qualified" text="已资格审核"/><SelectItem value="partner" text="合作伙伴"/></Select><Select id="bm-record-owner" labelText="负责人" value={draft.owner} onChange={(e)=>setDraft((prev)=>({...prev,owner:e.target.value}))}><SelectItem value="team-a" text="销售团队 A"/><SelectItem value="team-b" text="销售团队 B"/><SelectItem value="marketing" text="营销运营"/><SelectItem value="system" text="系统管理员"/></Select><Select id="bm-record-status" labelText="状态" value={draft.status} onChange={(e)=>setDraft((prev)=>({...prev,status:e.target.value}))}><SelectItem value="new" text="新建"/><SelectItem value="review" text="待审核"/><SelectItem value="active" text="有效"/><SelectItem value="paused" text="暂停"/></Select><InlineNotification kind="info" lowContrast title="草稿模式" subtitle="此操作仅更新当前页面状态，不会写入数据库。"/></div>
+    </Modal>
+  </div>;
+}
