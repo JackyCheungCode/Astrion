@@ -10,7 +10,7 @@ export const supabase = supabaseConfigured
 
 const entityMap = {
   '/crm/accounts': {
-    table: 'crm_accounts',
+    table: 'crm_accounts', archived: true,
     columns: ['account_number','account_name','industry','country_code','customer_tier','owner_id','status'],
     labels: ['账户编号','客户名称','行业','国家/地区','客户等级','负责人','状态'],
     numberField: 'account_number',
@@ -19,7 +19,7 @@ const entityMap = {
     create: (name, number) => ({ account_number: number, account_name: name, status: 'active' }),
   },
   '/crm/contacts': {
-    table: 'crm_contacts',
+    table: 'crm_contacts', archived: true,
     columns: ['contact_number','full_name','account_id','job_title','email','country_code','status'],
     labels: ['联系人编号','姓名','所属公司','职位','业务邮箱','国家/地区','状态'],
     numberField: 'contact_number',
@@ -28,7 +28,7 @@ const entityMap = {
     create: (name, number) => ({ contact_number: number, last_name: name, status: 'active' }),
   },
   '/crm/leads': {
-    table: 'crm_leads',
+    table: 'crm_leads', archived: true,
     columns: ['lead_number','company_name','source','score','owner_id','status'],
     labels: ['线索编号','公司','来源','评分','负责人','状态'],
     numberField: 'lead_number',
@@ -37,7 +37,7 @@ const entityMap = {
     create: (name, number) => ({ lead_number: number, company_name: name, source: 'manual', status: 'new' }),
   },
   '/sales/opportunities': {
-    table: 'crm_opportunities',
+    table: 'crm_opportunities', archived: true,
     columns: ['opportunity_number','opportunity_name','account_id','stage','amount','probability','expected_close_date'],
     labels: ['商机编号','商机名称','客户','销售阶段','预计金额','概率','预计关闭'],
     numberField: 'opportunity_number',
@@ -97,13 +97,12 @@ export async function listCrmRecords(path) {
   const config = entityMap[path];
   if (!config) return null;
   const { organizationId } = await getOrgContext();
-  const { data, error } = await supabase
+  let query = supabase
     .from(config.table)
     .select('id,organization_id,' + config.columns.join(','))
-    .eq('organization_id', organizationId)
-    .is('archived_at', null)
-    .order('updated_at', { ascending: false })
-    .limit(200);
+    .eq('organization_id', organizationId);
+  if (config.archived) query = query.is('archived_at', null);
+  const { data, error } = await query.order('updated_at', { ascending: false }).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.columns.map((key) => displayValue(key, record[key])));
   return { columns: config.labels, rows, count: rows.length };
