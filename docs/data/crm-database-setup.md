@@ -36,7 +36,7 @@ If Supabase variables are absent, the UI remains in clearly labeled demo mode. I
 
 ## Remaining production work
 
-- Full multi-field edit forms, archive/delete flows, cursor pagination, relationship hydration, typed field-value persistence, field-level authorization, and safe dynamic validation.
+- Full multi-field edit forms, restore/physical-delete flows, cursor pagination, typed custom-field value persistence, field-level authorization, and safe dynamic validation. Core lists now hydrate key account relationships and support CSV export of the currently loaded/filtered rows.
 - Expand role-boundary tests with representative workspace/user fixtures and perform a security review before production.
 - Business-rule tests for lead conversion, quote acceptance/expiry, order creation, and audit capture.
 - Atomic pricing/tax calculations, quote versioning rules, approvals, and finance reconciliation.
