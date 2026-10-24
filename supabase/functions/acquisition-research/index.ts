@@ -200,17 +200,32 @@ Deno.serve(async (request) => {
   const maxResults = Math.min(10, Math.max(1, Number.isFinite(Number(body.maxResults)) ? Math.floor(Number(body.maxResults)) : 10));
   const persistCandidates = body.persistCandidates === true;
 
+  const requestedWorkspaceId = typeof body.workspaceId === "string" ? body.workspaceId.trim() : "";
+  if (requestedWorkspaceId.length > 100) {
+    return jsonResponse({ error: "Invalid workspace selection" }, 400);
+  }
+
   const { data: memberships, error: membershipError } = await supabase
     .from("workspace_memberships")
     .select("workspace_id,role_key")
     .eq("user_id", user.id)
     .eq("is_active", true)
-    .limit(2);
+    .limit(100);
   if (membershipError) return jsonResponse({ error: "Could not verify workspace membership" }, 403);
   if (!memberships?.length) return jsonResponse({ error: "This user is not a member of a workspace" }, 403);
-  if (memberships.length > 1) return jsonResponse({ error: "Workspace selection is required before searching" }, 409);
 
-  const { workspace_id: workspaceId, role_key: role } = memberships[0];
+  const selectedMembership = requestedWorkspaceId
+    ? memberships.find((membership) => membership.workspace_id === requestedWorkspaceId)
+    : memberships.length === 1 ? memberships[0] : null;
+  if (!selectedMembership) {
+    return jsonResponse({
+      error: requestedWorkspaceId
+        ? "The selected workspace is not an active membership for this user"
+        : "Workspace selection is required before searching",
+    }, requestedWorkspaceId ? 403 : 409);
+  }
+
+  const { workspace_id: workspaceId, role_key: role } = selectedMembership;
   if (persistCandidates && !["owner", "admin", "sales_manager", "sales_rep", "marketing"].includes(role)) {
     return jsonResponse({ error: "Your workspace role cannot create lead records" }, 403);
   }
