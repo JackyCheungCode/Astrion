@@ -63,8 +63,15 @@ records['/acquisition/research'] = {
   ...records['/crm/leads'],
   title:'企业研究',
   description:'查看企业网站、研究状态与来源 URL；来源证据保留供人工复核。',
-  columns:['线索编号','候选公司','企业网站','研究状态','来源 URL','发现时间'],
-  rows:[['LEA-DEMO-01','Northstar Industries','northstar.example','needs_review','https://example.com','演示数据'],['LEA-DEMO-02','BluePeak Systems','bluepeak.example','needs_review','https://example.org','演示数据']],
+  columns:['线索编号','候选公司','企业网站','研究状态','来源 URL','审核状态'],
+  rows:[['LEA-DEMO-01','Northstar Industries','northstar.example','needs_review','https://example.com','new'],['LEA-DEMO-02','BluePeak Systems','bluepeak.example','needs_review','https://example.org','new']],
+};
+records['/data/audit'] = {
+  title:'审计日志',
+  description:'只读查看关键 CRM 操作、业务对象、操作者与事件摘要；仅授权角色可访问真实审计记录。',
+  columns:['操作','业务对象','记录 ID','操作人 ID','时间','事件摘要'],
+  rows:[['lead_created','crm_leads','DEMO-LEAD-01','system','2026-10-24','演示审计事件'],['quote_accepted','crm_quotes','DEMO-QUOTE-01','sales_manager','2026-10-23','演示审计事件']],
+  canCreate:false,
 };
 
 const defaultColumns = ['编号','名称','所属对象','负责人','状态','更新时间'];
@@ -89,7 +96,7 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, on
         <SelectItem value="all" text="全部状态"/><SelectItem value="有效" text="有效"/><SelectItem value="待审核" text="待审核"/><SelectItem value="处理中" text="处理中"/><SelectItem value="草稿" text="草稿"/>
       </Select>
       <Button kind="tertiary" renderIcon={Download} onClick={()=>window.alert('当前为前端演示数据；接入后端后将导出真实记录。')}>导出</Button>
-      <Button renderIcon={Add} onClick={onCreate}>新建记录</Button>
+      {config.canCreate!==false&&<Button renderIcon={Add} onClick={onCreate}>新建记录</Button>}
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
       <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
@@ -326,7 +333,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
     {config.settings&&<SettingsPanel type="workspace"/>}
     {path==='/settings/users'&&<SettingsPanel type="users"/>}
     {config.integrations&&<SettingsPanel type="integrations"/>}
-    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
+    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames,canCreate:persistentConfig?.canCreate??config.canCreate??true}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
     <div className="bm-page-foot"><span><DataBase size={14}/> Astrion 元数据驱动业务界面</span><span>当前为前端原型 · 真实持久化、权限校验与服务端 API 尚未连接</span></div>
     <Modal open={createOpen} modalHeading="新建业务记录" primaryButtonText="保存草稿" secondaryButtonText="取消" onRequestClose={()=>setCreateOpen(false)} onRequestSubmit={saveDraft} size="md">
       <div className="bm-create-form"><TextInput id="bm-record-name" labelText="记录名称" value={draft.name} onChange={(e)=>setDraft((prev)=>({...prev,name:e.target.value}))} placeholder="输入名称"/>{(!persistentSupported||!supabaseConfigured)&&<><Select id="bm-record-type" labelText="记录类型" value={draft.type} onChange={(e)=>setDraft((prev)=>({...prev,type:e.target.value}))}><SelectItem value="standard" text="标准记录"/><SelectItem value="strategic" text="战略客户"/><SelectItem value="qualified" text="已资格审核"/><SelectItem value="partner" text="合作伙伴"/></Select><Select id="bm-record-owner" labelText="负责人" value={draft.owner} onChange={(e)=>setDraft((prev)=>({...prev,owner:e.target.value}))}><SelectItem value="team-a" text="销售团队 A"/><SelectItem value="team-b" text="销售团队 B"/><SelectItem value="marketing" text="营销运营"/><SelectItem value="system" text="系统管理员"/></Select><Select id="bm-record-status" labelText="状态" value={draft.status} onChange={(e)=>setDraft((prev)=>({...prev,status:e.target.value}))}><SelectItem value="new" text="新建"/><SelectItem value="review" text="待审核"/><SelectItem value="active" text="有效"/><SelectItem value="paused" text="暂停"/></Select><InlineNotification kind="info" lowContrast title="演示模式" subtitle="此操作仅更新当前页面状态，不会写入数据库。"/></>}{persistentSupported&&supabaseConfigured&&<InlineNotification kind="info" lowContrast title="数据库保存" subtitle="系统将生成业务编号并保存名称与必要默认字段；其他字段编辑将在后续表单中开放。"/>}</div>
