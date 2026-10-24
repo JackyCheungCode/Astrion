@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase, supabaseConfigured } from './services/crmRepository.js';
 import {
   Add, ArrowRight, Search, Renew, Filter, CheckmarkFilled, Time, WarningAlt,
@@ -36,6 +36,7 @@ function CarbonSelect({ id, label, value, options, onChange, helperText }) {
 
 export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [activeTab, setActiveTab] = useState(path.endsWith('/targets') ? 'targets' : path.endsWith('/discovery') ? 'discovery' : 'tasks');
+  useEffect(()=>{setActiveTab(path.endsWith('/targets')?'targets':path.endsWith('/discovery')?'discovery':'tasks');},[path]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [taskName, setTaskName] = useState('欧洲中型 SaaS 企业');
   const [audience, setAudience] = useState('b2b');
