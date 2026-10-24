@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   ArrowRight,
   LogoApple,
-  LogoGoogle,
   LogoMicrosoft,
 } from '@carbon/icons-react';
 import {
@@ -13,8 +12,26 @@ import {
   TextInput,
 } from '@carbon/react';
 
+function GoogleMark(props) {
+  return (
+    <svg
+      {...props}
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.52h3.23c1.89-1.74 2.99-4.3 2.99-7.37Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.4l-3.23-2.52c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.75-5.59-4.1H3.07v2.6A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.41 13.94a6.02 6.02 0 0 1 0-3.88v-2.6H3.07a10 10 0 0 0 0 9.08l3.34-2.6Z" />
+      <path fill="#EA4335" d="M12 5.96c1.47 0 2.79.5 3.82 1.5l2.87-2.87C16.95 2.97 14.7 2 12 2a10 10 0 0 0-8.93 5.46l3.34 2.6C7.2 7.71 9.4 5.96 12 5.96Z" />
+    </svg>
+  );
+}
+
 const providers = [
-  { id: 'google', label: '使用 Google 登录', Icon: LogoGoogle },
+  { id: 'google', label: '使用 Google 登录', Icon: GoogleMark },
   { id: 'apple', label: '使用 Apple 登录', Icon: LogoApple },
   { id: 'microsoft', label: '使用 Microsoft 登录', Icon: LogoMicrosoft },
 ];
