@@ -94,6 +94,14 @@ entityMap['/acquisition/research'] = {
   labels:['线索编号','候选公司','企业网站','研究状态','来源 URL','审核状态'],
   map:(record)=>[record.lead_number,record.company_name,record.website||'—',record.enrichment_status,record.source_detail||'—',record.status],
 };
+entityMap['/data/audit'] = {
+  table:'audit_events',
+  select:['action_key','object_key','record_id','actor_user_id','created_at','metadata'],
+  labels:['操作','业务对象','记录 ID','操作人 ID','时间','事件摘要'],
+  orderBy:'created_at',
+  canCreate:false,
+  map:(record)=>[record.action_key,record.object_key,record.record_id||'—',record.actor_user_id||'系统',new Date(record.created_at).toLocaleString(),JSON.stringify(record.metadata||{}).slice(0,180)],
+};
 
 const displayValue = (key,value) => {
   if (value === null || value === undefined || value === '') return '—';
@@ -137,10 +145,10 @@ export async function listCrmRecords(path) {
     .select('id,workspace_id,'+[...config.select,...(config.editSelect||[]),...(config.embeds||[])].join(','))
     .eq('workspace_id',workspaceId);
   if (config.archived) query = query.is('archived_at',null);
-  const { data,error } = await query.order('updated_at',{ascending:false}).limit(200);
+  const { data,error } = await query.order(config.orderBy||'updated_at',{ascending:false}).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.map ? config.map(record) : config.select.map((key) => displayValue(key,record[key])));
-  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), count:rows.length };
+  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), count:rows.length };
 }
 
 export async function createCrmRecord(path,name) {
