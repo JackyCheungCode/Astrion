@@ -14,6 +14,8 @@ const entityMap = {
     select: ['account_number','name','industry','country_code','rating','owner_user_id','lifecycle_stage'],
     labels: ['账户编号','客户名称','行业','国家/地区','客户等级','负责人','生命周期'],
     create: (name, number) => ({ account_number:number, name, account_type:'prospect', lifecycle_stage:'new', source:'manual' }),
+    editName: (record) => record.name,
+    update: (name) => ({name}),
     hasAuditColumns: true, assignOwner: true,
   },
   '/crm/contacts': {
@@ -23,12 +25,16 @@ const entityMap = {
     map: (record) => [record.contact_number, [record.first_name,record.last_name].filter(Boolean).join(' '), record.account_id, record.job_title, record.email, record.country_code, record.consent_status],
     create: (name, number) => ({ contact_number:number, first_name:'New', last_name:name, consent_status:'unknown', source:'manual' }),
     hasAuditColumns: true, assignOwner: true,
+    editName: (record) => [record.first_name,record.last_name].filter(Boolean).join(' '),
+    update: (name) => { const parts=name.trim().split(/\\s+/); return {first_name:parts.slice(0,-1).join(' '),last_name:parts.at(-1)||name}; },
   },
   '/crm/leads': {
     table: 'crm_leads', archived: true, prefix: 'LEA',
     select: ['lead_number','company_name','lead_source','score','owner_user_id','status'],
     labels: ['线索编号','公司','来源','评分','负责人','状态'],
     create: (name, number) => ({ lead_number:number, company_name:name, lead_source:'manual', status:'new' }),
+    editName: (record) => record.company_name,
+    update: (name) => ({company_name:name}),
     hasAuditColumns: true, assignOwner: true,
   },
   '/sales/opportunities': {
@@ -37,11 +43,16 @@ const entityMap = {
     labels: ['商机编号','商机名称','客户账户 ID','销售阶段','预计金额','概率','预计关闭'],
     map: (record) => [record.opportunity_number,record.name,record.account_id,record.stage,displayValue('amount',record.amount),displayValue('probability',record.probability),record.expected_close_date || '—'],
     create: (name, number) => ({ opportunity_number:number, name, stage:'prospecting', status:'open', amount:0, probability:10 }),
+    editName: (record) => record.name,
+    update: (name) => ({name}),
     hasAuditColumns: true, assignOwner: true,
   },
   '/sales/quotes': {
     table: 'crm_quotes', prefix: 'QUO',
     select: ['quote_number','account_id','opportunity_id','currency','total_amount','version','status'],
+    editSelect: ['notes'],
+    editName: (record) => record.notes || '',
+    update: (name) => ({notes:name}),
     labels: ['报价编号','客户账户 ID','关联商机 ID','币种','报价金额','版本','状态'],
     create: (name, number) => ({ quote_number:number, notes:name, version:1, currency:'EUR', status:'draft' }),
     assignOwner: true,
@@ -51,6 +62,7 @@ const entityMap = {
     select: ['order_number','account_id','order_date','currency','total_amount','status'],
     labels: ['订单编号','客户账户 ID','订单日期','币种','订单金额','状态'],
     create: (_name, number) => ({ order_number:number, order_date:new Date().toISOString().slice(0,10), currency:'EUR', status:'draft' }),
+    editName: () => null,
     assignOwner: true,
   },
 };
@@ -94,13 +106,13 @@ export async function listCrmRecords(path) {
   if (!config) return null;
   const { workspaceId } = await getWorkspaceContext();
   let query = supabase.from(config.table)
-    .select('id,workspace_id,'+config.select.join(','))
+    .select('id,workspace_id,'+[...config.select,...(config.editSelect||[])].join(','))
     .eq('workspace_id',workspaceId);
   if (config.archived) query = query.is('archived_at',null);
   const { data,error } = await query.order('updated_at',{ascending:false}).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.map ? config.map(record) : config.select.map((key) => displayValue(key,record[key])));
-  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), count:rows.length };
+  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), count:rows.length };
 }
 
 export async function createCrmRecord(path,name) {
@@ -117,6 +129,19 @@ export async function createCrmRecord(path,name) {
   if (config.assignOwner) payload.owner_user_id = userId;
   const { data,error } = await supabase.from(config.table).insert(payload).select('id').single();
   if (error) throw error;
+  return data;
+}
+
+export async function updateCrmRecord(path,recordId,name) {
+  const config=entityMap[path];
+  if(!config?.update) throw new Error('该模块暂不支持编辑主字段。');
+  if(!name?.trim()) throw new Error('记录名称不能为空。');
+  const {workspaceId,userId}=await getWorkspaceContext();
+  const payload=config.update(name.trim());
+  if(config.hasAuditColumns) payload.updated_by=userId;
+  const {data,error}=await supabase.from(config.table).update(payload)
+    .eq('id',recordId).eq('workspace_id',workspaceId).select('id').single();
+  if(error) throw error;
   return data;
 }
 
