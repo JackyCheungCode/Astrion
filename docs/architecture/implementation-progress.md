@@ -189,3 +189,8 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Remove duplicate workspace selector style declarations while retaining the existing responsive Carbon top-bar styling.
 - [ ] Re-run Vite build, Deno type-check, database tests, and deployed two-workspace integration tests. GitHub status endpoints returned no check records for the inspected latest commit, and a Cloudflare preview for earlier code commits was still reported as in progress; this does not establish a passing build.
 - [ ] Configure and verify Serper/Tavily/Works secrets in a test Supabase project. Supabase's documented secret mechanism is server-side Edge Function environment variables; do not expose provider secrets in browser variables. (See https://supabase.com/docs/guides/functions/secrets)
+
+- [x] Connect the acquisition research-depth option to provider selection (Serper-only when deep research is disabled and both providers were selected).
+- [x] Add an explicitly labeled evidence-quality heuristic (not a purchase-intent or AI qualification score), display it in search results, and retain it with saved evidence.
+- [x] Wire the traceable-source option to exclude results without a usable snippet while preserving source URLs.
+- [ ] Confirm evidence-score thresholds with product owners before using them for sales qualification; the current score is a transparent heuristic, not a trained model.
