@@ -8,6 +8,8 @@ import './workspace.scss';
 import AcquisitionPage from './AcquisitionPage.jsx';
 import BusinessModulePage from './BusinessModulePage.jsx';
 import { astrionNavigation } from './navigation/astrion-navigation.js';
+import AuthGate from './AuthGate.jsx';
+import { supabase, supabaseConfigured } from './services/crmRepository.js';
 
 
 const iconByPath = new Map();
@@ -30,6 +32,15 @@ export default function Workspace() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState('');
+  const [authSession, setAuthSession] = useState(undefined);
+
+  useEffect(() => {
+    if (!supabaseConfigured || !supabase) { setAuthSession(null); return undefined; }
+    let active = true;
+    supabase.auth.getSession().then(({data}) => { if (active) setAuthSession(data.session); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setAuthSession(session));
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     const onPopState = () => setPath(readInitialPath());
@@ -75,6 +86,8 @@ export default function Workspace() {
   };
 
   const toggleSidebar = () => setSidebarOpen((value) => !value);
+  if (supabaseConfigured && authSession === undefined) return <main className="astrion-auth-page"><section className="astrion-auth-card"><div className="astrion-auth-brand"><span>A</span><div><strong>Astrion</strong><small>BUSINESS PLATFORM</small></div></div><p className="astrion-auth-description">正在检查安全登录状态…</p></section></main>;
+  if (supabaseConfigured && !authSession) return <AuthGate />;
   const menuTree = (
     <nav className="astrion-nav" aria-label="主导航">
       {astrionNavigation.map(({ label, path: itemPath, Icon, children = [] }) => {
@@ -116,7 +129,7 @@ export default function Workspace() {
       <Button kind="ghost" hasIconOnly renderIcon={Notification} iconDescription="通知" onClick={() => setNotice('通知中心暂未接入。')} />
       <Button kind="ghost" hasIconOnly renderIcon={Help} iconDescription="帮助" onClick={() => setNotice('帮助中心暂未接入。')} />
       <span className="astrion-topbar-divider" />
-      <Button kind="ghost" hasIconOnly renderIcon={UserAvatar} iconDescription="用户菜单" onClick={() => setNotice('用户菜单与账号权限将在认证模块接入后启用。')} />
+      <Button kind="ghost" hasIconOnly renderIcon={UserAvatar} iconDescription="用户菜单" onClick={async () => { if (supabaseConfigured && supabase) { await supabase.auth.signOut(); setNotice('已退出登录。'); } else setNotice('当前处于演示模式；配置 Supabase 后可启用账号登录。'); }} />
     </header>
 
     {sidebarOpen && <div className="astrion-sidebar-desktop">{menuTree}</div>}
