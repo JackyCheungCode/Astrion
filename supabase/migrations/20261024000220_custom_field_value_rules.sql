@@ -10,6 +10,15 @@ declare
   v_scalar text;
   v_numeric numeric;
 begin
+  if tg_op='DELETE' then
+    select * into v_field
+    from public.crm_custom_field_definitions
+    where id=old.field_definition_id and workspace_id=old.workspace_id;
+    if found and v_field.is_readonly then raise exception 'This custom field is read-only' using errcode='42501'; end if;
+    if found and v_field.is_required then raise exception 'Required custom field "%" cannot be removed',v_field.label using errcode='23502'; end if;
+    return old;
+  end if;
+
   select * into v_field
   from public.crm_custom_field_definitions
   where id=new.field_definition_id and workspace_id=new.workspace_id and is_active=true;
@@ -86,7 +95,7 @@ $$;
 
 drop trigger if exists crm_custom_field_values_rules_guard on public.crm_custom_field_values;
 create trigger crm_custom_field_values_rules_guard
-before insert or update on public.crm_custom_field_values
+before insert or update or delete on public.crm_custom_field_values
 for each row execute function public.enforce_custom_field_value_rules();
 
 drop trigger if exists crm_custom_field_values_audit_event on public.crm_custom_field_values;
