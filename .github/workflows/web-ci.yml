@@ -1,0 +1,30 @@
+name: Astrion web CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/ai-acquisition-frontend
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  web-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package.json
+      - name: Install web dependencies
+        run: npm install --prefix apps/web --no-audit --no-fund
+      - name: Build web app
+        run: npm run build --prefix apps/web
