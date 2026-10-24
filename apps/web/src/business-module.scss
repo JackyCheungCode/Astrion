@@ -105,3 +105,7 @@
 @media(max-width:480px) { .bm-record-detail-grid { grid-template-columns:1fr; } }
 
 .bm-record-edit { display:flex; flex-direction:column; gap:12px; padding:16px; background:#f4f4f4; border-left:3px solid #0f62fe; }.bm-record-edit .cds--btn { align-self:flex-start; }
+
+.bm-custom-values { margin-top:18px; padding:16px; border:1px solid #e0e0e0; background:#fff; }.bm-custom-values-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }.bm-custom-values-heading h3 { margin:0; font-size:15px; font-weight:500; }.bm-custom-values-heading span,.bm-custom-values>p { color:#6f6f6f; font-size:11px; }
+.bm-custom-values-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:16px; }.bm-custom-values-grid>div { min-width:0; }.bm-custom-values .cds--btn { margin-top:4px; }
+@media(max-width:560px) { .bm-custom-values-grid { grid-template-columns:1fr; } }
