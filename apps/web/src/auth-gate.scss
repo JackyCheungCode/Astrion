@@ -1,0 +1,14 @@
+.astrion-auth-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 20px 20px; background:#f4f4f4; color:#161616; font-family:'IBM Plex Sans',Arial,sans-serif; }
+.astrion-auth-card { width:min(100%,440px); padding:36px; background:#fff; border-top:4px solid #0f62fe; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.astrion-auth-brand { display:flex; align-items:center; gap:12px; }
+.astrion-auth-brand>span { display:grid; place-items:center; width:42px; height:42px; background:#0f62fe; color:#fff; font-size:24px; font-weight:600; }
+.astrion-auth-brand>div { display:flex; flex-direction:column; gap:3px; }.astrion-auth-brand strong { font-size:21px; font-weight:600; }.astrion-auth-brand small { color:#6f6f6f; font-size:9px; letter-spacing:1.5px; }
+.astrion-auth-rule { height:1px; margin:28px 0 30px; background:#e0e0e0; }
+.astrion-auth-eyebrow { margin:0 0 10px; color:#525252; font-size:10px; letter-spacing:1.4px; font-weight:600; }
+.astrion-auth-card h1 { margin:0 0 10px; font-size:28px; font-weight:400; letter-spacing:-.4px; }
+.astrion-auth-description { margin:0 0 24px; color:#6f6f6f; font-size:13px; line-height:1.6; }
+.astrion-auth-form { display:flex; flex-direction:column; gap:20px; margin-top:22px; }
+.astrion-auth-submit { width:100%; max-width:none; justify-content:space-between; }
+.astrion-auth-footnote { margin:24px 0 0; padding-top:18px; border-top:1px solid #e0e0e0; color:#6f6f6f; font-size:11px; line-height:1.6; }
+.astrion-auth-footer { margin-top:22px; color:#8d8d8d; font-size:10px; text-align:center; }
+@media(max-width:480px) { .astrion-auth-card { padding:24px; } }
