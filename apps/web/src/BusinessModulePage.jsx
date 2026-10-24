@@ -117,17 +117,19 @@ function FieldConfiguration() {
     ],
   };
   const [objectName,setObjectName] = useState('account');
-  const [fieldName,setFieldName] = useState('');
   const [label,setLabel] = useState('');
   const [fieldType,setFieldType] = useState('text');
   const [required,setRequired] = useState(false);
   const [unique,setUnique] = useState(false);
   const [fields,setFields] = useState(fieldsByObject.account);
   const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
+  const generatedFieldName = label.trim().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'custom_field_' + (fields.length + 1);
   const addField = () => {
-    if (!fieldName.trim() || !label.trim()) return;
-    setFields((prev)=>[...prev,{name:fieldName.trim().replace(/[^a-zA-Z0-9_]/g,'_'),label,type:typeLabels[fieldType],required,unique}]);
-    setFieldName('');setLabel('');setRequired(false);setUnique(false);
+    if (!label.trim()) return;
+    const fieldKey = generatedFieldName;
+    if (fields.some((field)=>field.name===fieldKey)) return;
+    setFields((prev)=>[...prev,{name:fieldKey,label:label.trim(),type:typeLabels[fieldType],required,unique}]);
+    setLabel('');setRequired(false);setUnique(false);
   };
   return <div className="bm-field-config">
     <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>当前修改仅保存在浏览器内存中；正式保存需要连接元数据 API。</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields(fieldsByObject[next]||fieldsByObject.account);}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
@@ -136,9 +138,9 @@ function FieldConfiguration() {
     </div>
     <div className="bm-add-field"><h3>新增字段</h3><div className="bm-field-form">
       <TextInput id="bm-field-label" labelText="字段标签" value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="例如：客户优先级"/>
-      <TextInput id="bm-field-api" labelText="API 名称" value={fieldName} onChange={(e)=>setFieldName(e.target.value)} placeholder="例如：customer_priority"/>
+      <div className="bm-generated-api"><span>API 名称（自动生成）</span><code>{generatedFieldName}</code></div>
       <Select id="bm-field-type" labelText="字段类型" value={fieldType} onChange={(e)=>setFieldType(e.target.value)}>{Object.entries(typeLabels).map(([value,text])=><SelectItem key={value} value={value} text={text}/>)}</Select>
-    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(e,{checked})=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(e,{checked})=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!fieldName.trim()||!label.trim()}>添加字段</Button></div></div>
+    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(e,{checked})=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(e,{checked})=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!label.trim()||fields.some((field)=>field.name===generatedFieldName)}>添加字段</Button></div></div>
   </div>;
 }
 
