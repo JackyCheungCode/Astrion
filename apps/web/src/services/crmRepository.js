@@ -21,8 +21,9 @@ const entityMap = {
   '/crm/contacts': {
     table: 'crm_contacts', archived: true, prefix: 'CON',
     select: ['contact_number','first_name','last_name','account_id','job_title','email','country_code','consent_status'],
-    labels: ['联系人编号','联系人姓名','所属客户 ID','职位','业务邮箱','国家/地区','同意状态'],
-    map: (record) => [record.contact_number, [record.first_name,record.last_name].filter(Boolean).join(' '), record.account_id, record.job_title, record.email, record.country_code, record.consent_status],
+    labels: ['联系人编号','联系人姓名','所属客户','职位','业务邮箱','国家/地区','同意状态'],
+    embeds: ['account:crm_accounts(name,account_number)'],
+    map: (record) => [record.contact_number, [record.first_name,record.last_name].filter(Boolean).join(' '), record.account?.name || '—', record.job_title, record.email, record.country_code, record.consent_status],
     create: (name, number) => ({ contact_number:number, first_name:'New', last_name:name, consent_status:'unknown', source:'manual' }),
     hasAuditColumns: true, assignOwner: true,
     editName: (record) => [record.first_name,record.last_name].filter(Boolean).join(' '),
@@ -40,8 +41,9 @@ const entityMap = {
   '/sales/opportunities': {
     table: 'crm_opportunities', archived: true, prefix: 'OPP',
     select: ['opportunity_number','name','account_id','stage','amount','probability','expected_close_date'],
-    labels: ['商机编号','商机名称','客户账户 ID','销售阶段','预计金额','概率','预计关闭'],
-    map: (record) => [record.opportunity_number,record.name,record.account_id,record.stage,displayValue('amount',record.amount),displayValue('probability',record.probability),record.expected_close_date || '—'],
+    labels: ['商机编号','商机名称','客户','销售阶段','预计金额','概率','预计关闭'],
+    embeds: ['account:crm_accounts(name,account_number)'],
+    map: (record) => [record.opportunity_number,record.name,record.account?.name || '—',record.stage,displayValue('amount',record.amount),displayValue('probability',record.probability),record.expected_close_date || '—'],
     create: (name, number) => ({ opportunity_number:number, name, stage:'prospecting', status:'open', amount:0, probability:10 }),
     editName: (record) => record.name,
     update: (name) => ({name}),
@@ -53,14 +55,18 @@ const entityMap = {
     editSelect: ['notes'],
     editName: (record) => record.notes || '',
     update: (name) => ({notes:name}),
-    labels: ['报价编号','客户账户 ID','关联商机 ID','币种','报价金额','版本','状态'],
+    labels: ['报价编号','客户','关联商机','币种','报价金额','版本','状态'],
+    embeds: ['account:crm_accounts(name,account_number)','opportunity:crm_opportunities(name,opportunity_number)'],
+    map: (record) => [record.quote_number,record.account?.name || '—',record.opportunity?.name || '—',record.currency,displayValue('total_amount',record.total_amount),record.version,record.status],
     create: (name, number) => ({ quote_number:number, notes:name, version:1, currency:'EUR', status:'draft' }),
     assignOwner: true,
   },
   '/orders/list': {
     table: 'crm_sales_orders', prefix: 'SO',
-    select: ['order_number','account_id','order_date','currency','total_amount','status'],
-    labels: ['订单编号','客户账户 ID','订单日期','币种','订单金额','状态'],
+    select: ['order_number','account_id','quote_id','order_date','currency','total_amount','status'],
+    labels: ['订单编号','客户','关联报价','订单日期','币种','订单金额','状态'],
+    embeds: ['account:crm_accounts(name,account_number)','quote:crm_quotes(quote_number)'],
+    map: (record) => [record.order_number,record.account?.name || '—',record.quote?.quote_number || '—',record.order_date,record.currency,displayValue('total_amount',record.total_amount),record.status],
     create: (_name, number) => ({ order_number:number, order_date:new Date().toISOString().slice(0,10), currency:'EUR', status:'draft' }),
     editName: () => null,
     assignOwner: true,
@@ -106,7 +112,7 @@ export async function listCrmRecords(path) {
   if (!config) return null;
   const { workspaceId } = await getWorkspaceContext();
   let query = supabase.from(config.table)
-    .select('id,workspace_id,'+[...config.select,...(config.editSelect||[])].join(','))
+    .select('id,workspace_id,'+[...config.select,...(config.editSelect||[]),...(config.embeds||[])].join(','))
     .eq('workspace_id',workspaceId);
   if (config.archived) query = query.is('archived_at',null);
   const { data,error } = await query.order('updated_at',{ascending:false}).limit(200);
