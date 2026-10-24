@@ -319,14 +319,33 @@ create policy "members can read organization memberships" on public.organization
 do $$
 declare t text;
 begin
-  foreach t in array array['crm_accounts','crm_contacts','crm_leads','crm_opportunities','crm_products','crm_quotes','crm_sales_orders','crm_activities','crm_field_definitions','crm_audit_log'] loop
+  foreach t in array array['crm_accounts','crm_contacts','crm_leads','crm_opportunities','crm_products','crm_quotes','crm_sales_orders','crm_activities','crm_field_definitions'] loop
     execute format('alter table public.%I enable row level security',t);
     execute format('create policy %I on public.%I for select to authenticated using (public.is_org_member(organization_id))',t||'_read_member',t);
     execute format('create policy %I on public.%I for insert to authenticated with check (public.has_org_role(organization_id, array[''owner'',''admin'',''sales_manager'',''sales_rep'',''marketing'',''service_agent'']))',t||'_insert_member',t);
     execute format('create policy %I on public.%I for update to authenticated using (public.has_org_role(organization_id, array[''owner'',''admin'',''sales_manager'',''sales_rep'',''marketing'',''service_agent''])) with check (public.has_org_role(organization_id, array[''owner'',''admin'',''sales_manager'',''sales_rep'',''marketing'',''service_agent'']))',t||'_update_member',t);
     execute format('create policy %I on public.%I for delete to authenticated using (public.has_org_role(organization_id, array[''owner'',''admin'']))',t||'_delete_admin',t);
   end loop;
-end $$;
+end $;
+
+-- Audit entries are append-only: members may read and authorized members may insert.
+alter table public.crm_audit_log enable row level security;
+create policy crm_audit_log_read_member on public.crm_audit_log
+  for select to authenticated using (public.is_org_member(organization_id));
+create policy crm_audit_log_insert_member on public.crm_audit_log
+  for insert to authenticated with check (public.has_org_role(organization_id, array['owner','admin','sales_manager','sales_rep','marketing','service_agent']));
+
+-- Custom schema metadata is managed by workspace administrators/managers.
+drop policy if exists crm_field_definitions_insert_member on public.crm_field_definitions;
+drop policy if exists crm_field_definitions_update_member on public.crm_field_definitions;
+drop policy if exists crm_field_definitions_delete_admin on public.crm_field_definitions;
+create policy crm_field_definitions_insert_admin on public.crm_field_definitions
+  for insert to authenticated with check (public.has_org_role(organization_id, array['owner','admin','sales_manager']));
+create policy crm_field_definitions_update_admin on public.crm_field_definitions
+  for update to authenticated using (public.has_org_role(organization_id, array['owner','admin','sales_manager']))
+  with check (public.has_org_role(organization_id, array['owner','admin','sales_manager']));
+create policy crm_field_definitions_delete_admin on public.crm_field_definitions
+  for delete to authenticated using (public.has_org_role(organization_id, array['owner','admin']));
 
 -- Membership/organization provisioning is intentionally server-controlled.
 revoke all on function public.is_org_member(uuid) from public;
