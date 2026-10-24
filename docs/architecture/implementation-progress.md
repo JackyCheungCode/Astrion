@@ -209,3 +209,6 @@ This section supersedes earlier high-level prototype-only summaries where later 
 
 - [x] Implement actual client-side page slicing and controlled Carbon Pagination for CRM tables; reset to the first page when search or status filters change.
 - [ ] Verify archive browsing, restore, and pagination in the latest successful Vite build; an earlier build caught and fixed a syntax error in the archive-state declaration.
+
+- [x] Make acquisition CORS origin handling support a comma-separated exact allowlist so preview and production origins can be configured without wildcard access.
+- [ ] Verify the allowlist with the actual deployed Supabase Edge Function and configure `APP_ORIGINS` in its server-side secrets.
