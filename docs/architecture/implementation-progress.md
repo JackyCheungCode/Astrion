@@ -194,3 +194,8 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Add an explicitly labeled evidence-quality heuristic (not a purchase-intent or AI qualification score), display it in search results, and retain it with saved evidence.
 - [x] Wire the traceable-source option to exclude results without a usable snippet while preserving source URLs.
 - [ ] Confirm evidence-score thresholds with product owners before using them for sales qualification; the current score is a transparent heuristic, not a trained model.
+
+- [x] Extract workspace-selection and evidence-quality scoring logic into shared Deno helpers with unit tests for single/multiple workspace resolution, unauthorized workspace IDs, and bounded evidence scores.
+- [x] Add the helper unit-test command to the web CI workflow alongside the Edge Function type-check.
+- [x] Align acquisition volume choices with the server-side ten-result-per-provider limit to avoid misleading 25–250 result selections.
+- [ ] Confirm the new Deno tests and Vite build pass in CI; status APIs currently return no check records for the latest branch commits.
