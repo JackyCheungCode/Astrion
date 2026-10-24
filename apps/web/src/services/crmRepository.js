@@ -10,7 +10,7 @@ export const supabase = supabaseConfigured
 
 const entityMap = {
   '/crm/accounts': {
-    table: 'crm_accounts', archived: true, prefix: 'ACC',
+    table: 'crm_accounts', objectKey:'account', archived: true, prefix: 'ACC',
     select: ['account_number','name','industry','country_code','rating','owner_user_id','lifecycle_stage'],
     labels: ['账户编号','客户名称','行业','国家/地区','客户等级','负责人','生命周期'],
     create: (name, number) => ({ account_number:number, name, account_type:'prospect', lifecycle_stage:'new', source:'manual' }),
@@ -19,7 +19,7 @@ const entityMap = {
     hasAuditColumns: true, assignOwner: true,
   },
   '/crm/contacts': {
-    table: 'crm_contacts', archived: true, prefix: 'CON',
+    table: 'crm_contacts', objectKey:'contact', archived: true, prefix: 'CON',
     select: ['contact_number','first_name','last_name','account_id','job_title','email','country_code','consent_status'],
     labels: ['联系人编号','联系人姓名','所属客户','职位','业务邮箱','国家/地区','同意状态'],
     embeds: ['account:crm_accounts(name,account_number)'],
@@ -30,7 +30,7 @@ const entityMap = {
     update: (name) => { const parts=name.trim().split(/\s+/); return {first_name:parts.slice(0,-1).join(' '),last_name:parts.at(-1)||name}; },
   },
   '/crm/leads': {
-    table: 'crm_leads', archived: true, prefix: 'LEA',
+    table: 'crm_leads', objectKey:'lead', archived: true, prefix: 'LEA',
     select: ['lead_number','company_name','lead_source','score','owner_user_id','status'],
     labels: ['线索编号','公司','来源','评分','负责人','状态'],
     create: (name, number) => ({ lead_number:number, company_name:name, lead_source:'manual', status:'new' }),
@@ -39,7 +39,7 @@ const entityMap = {
     hasAuditColumns: true, assignOwner: true,
   },
   '/sales/opportunities': {
-    table: 'crm_opportunities', archived: true, prefix: 'OPP',
+    table: 'crm_opportunities', objectKey:'opportunity', archived: true, prefix: 'OPP',
     select: ['opportunity_number','name','account_id','stage','amount','probability','expected_close_date'],
     labels: ['商机编号','商机名称','客户','销售阶段','预计金额','概率','预计关闭'],
     embeds: ['account:crm_accounts(name,account_number)'],
@@ -50,7 +50,7 @@ const entityMap = {
     hasAuditColumns: true, assignOwner: true,
   },
   '/sales/quotes': {
-    table: 'crm_quotes', prefix: 'QUO',
+    table: 'crm_quotes', objectKey:'quote', prefix: 'QUO',
     select: ['quote_number','account_id','opportunity_id','currency','total_amount','version','status'],
     editSelect: ['notes'],
     editName: (record) => record.notes || '',
@@ -62,7 +62,7 @@ const entityMap = {
     assignOwner: true,
   },
   '/orders/list': {
-    table: 'crm_sales_orders', prefix: 'SO',
+    table: 'crm_sales_orders', objectKey:'order', prefix: 'SO',
     select: ['order_number','account_id','quote_id','order_date','currency','total_amount','status'],
     editSelect: ['customer_reference'],
     editName: (record) => record.customer_reference || '',
@@ -165,6 +165,62 @@ export async function createCrmRecord(path,name) {
   if (config.assignOwner) payload.owner_user_id = userId;
   const { data,error } = await supabase.from(config.table).insert(payload).select('id').single();
   if (error) throw error;
+  return data;
+}
+
+export async function listRecordCustomFields(path,recordId) {
+  const config=entityMap[path];
+  if(!config?.objectKey||!recordId)return [];
+  const {workspaceId}=await getWorkspaceContext();
+  const [{data:definitions,error:definitionError},{data:values,error:valueError}]=await Promise.all([
+    supabase.from('crm_custom_field_definitions')
+      .select('id,field_key,label,field_type,is_required,is_unique,is_readonly,is_searchable,is_filterable,default_value,options,validation_rules')
+      .eq('workspace_id',workspaceId).eq('object_key',config.objectKey).eq('is_active',true)
+      .order('display_order',{ascending:true}).limit(300),
+    supabase.from('crm_custom_field_values')
+      .select('id,field_definition_id,value')
+      .eq('workspace_id',workspaceId).eq('object_key',config.objectKey).eq('record_id',recordId).limit(300),
+  ]);
+  if(definitionError)throw definitionError;
+  if(valueError)throw valueError;
+  const valuesByField=new Map((values||[]).map((item)=>[item.field_definition_id,item]));
+  return (definitions||[]).map((field)=>{
+    const stored=valuesByField.get(field.id);
+    return {
+      id:field.id,key:field.field_key,label:field.label,fieldType:field.field_type,
+      required:field.is_required,unique:field.is_unique,readonly:field.is_readonly,
+      searchable:field.is_searchable,filterable:field.is_filterable,
+      options:Array.isArray(field.options)?field.options:[],
+      defaultValue:field.default_value,
+      validationRules:field.validation_rules||{},
+      value:stored?stored.value:field.default_value,
+      hasValue:Boolean(stored),rowId:stored?.id,
+    };
+  });
+}
+
+export async function saveRecordCustomField(path,recordId,field,value) {
+  const config=entityMap[path];
+  if(!config?.objectKey||!recordId)throw new Error('当前记录不支持自定义字段。');
+  if(field.readonly||field.fieldType==='formula'||field.fieldType==='auto_number')throw new Error('该字段为只读字段。');
+  let parsed=value;
+  if(field.fieldType==='number'||field.fieldType==='decimal'||field.fieldType==='currency'){
+    if(value===''||value===null||value===undefined)parsed=null;
+    else {parsed=Number(value);if(!Number.isFinite(parsed))throw new Error('请输入有效数字。');}
+  }else if(field.fieldType==='boolean'){
+    parsed=Boolean(value);
+  }else if(field.fieldType==='multi_select'){
+    parsed=Array.isArray(value)?value:String(value??'').split(',').map((item)=>item.trim()).filter(Boolean);
+  }else if(field.fieldType==='json'){
+    if(value===''||value===null||value===undefined)parsed=null;
+    else {try{parsed=typeof value==='string'?JSON.parse(value):value;}catch{throw new Error('JSON 字段格式不正确。');}}
+  }
+  if(field.required&&(parsed===null||parsed===undefined||parsed===''||(Array.isArray(parsed)&&!parsed.length)))throw new Error(`字段“${field.label}”为必填字段。`);
+  const {workspaceId}=await getWorkspaceContext();
+  const {data,error}=await supabase.from('crm_custom_field_values').upsert({
+    workspace_id:workspaceId,object_key:config.objectKey,record_id:recordId,field_definition_id:field.id,value:parsed,updated_at:new Date().toISOString(),
+  },{onConflict:'workspace_id,record_id,field_definition_id'}).select('id').single();
+  if(error)throw error;
   return data;
 }
 
