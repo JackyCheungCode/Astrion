@@ -170,6 +170,9 @@ alter table public.crm_leads add constraint crm_leads_converted_account_same_wor
 alter table public.crm_leads drop constraint if exists crm_leads_converted_contact_same_workspace;
 alter table public.crm_leads add constraint crm_leads_converted_contact_same_workspace
  foreign key (workspace_id,converted_contact_id) references public.crm_contacts(workspace_id,id) on delete no action;
+alter table public.crm_leads drop constraint if exists crm_leads_converted_opportunity_same_workspace;
+alter table public.crm_leads add constraint crm_leads_converted_opportunity_same_workspace
+ foreign key (workspace_id,converted_opportunity_id) references public.crm_opportunities(workspace_id,id) on delete no action;
 alter table public.crm_opportunities drop constraint if exists crm_opportunities_account_same_workspace;
 alter table public.crm_opportunities add constraint crm_opportunities_account_same_workspace
  foreign key (workspace_id,account_id) references public.crm_accounts(workspace_id,id) on delete no action;
