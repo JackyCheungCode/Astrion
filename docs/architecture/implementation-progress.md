@@ -78,8 +78,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add indexes for common workspace-scoped lookup, ownership, funnel, activity, and audit queries.
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
 - [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
-- [x] Add Supabase local configuration and 56 schema/RLS/transaction/usage smoke assertions.
-- [x] Migrations 00200–00210 and all 56 assertions passed in GitHub Actions.
+- [x] Add Supabase local configuration and 58 schema/RLS/transaction/usage/custom-field smoke assertions.
+- [x] Migrations 00200–00210 and all 56 assertions passed in GitHub Actions; migration 00220 adds server-side custom-field rules and awaits the expanded 58-assertion CI run.
 - [ ] Add representative tenant seed data and deeper role-boundary tests.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
