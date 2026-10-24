@@ -135,3 +135,39 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 - [x] Connect custom field values to record detail forms with typed inputs, dropdown options, defaults, JSON validation rules, uniqueness enforcement, read-only protection, and audit capture.
 - [x] Add atomic uniqueness checks for custom field values and validate non-empty required text/multi-select values on save.
+
+## Live task status — continuation checkpoint (2026-10-24)
+
+This section supersedes earlier high-level prototype-only summaries where later entries in this file document more complete implementation.
+
+### Current implementation status
+
+| Workstream | Status | Evidence / limitation |
+|---|---|---|
+| Carbon / IBM-style frontend shell and navigation | Implemented | Existing React + Carbon app shell and route-driven modules; visual/accessibility review remains open. |
+| Workspace authentication and tenant scope | Implemented, configuration-dependent | Supabase Auth gate and `workspace_memberships` context are in place. A user with multiple workspaces is blocked until a workspace switcher exists. |
+| CRM persistence | Implemented for core paths | Repository adapter supports account/contact/lead/opportunity/quote/order reads and creation, primary-field edits on supported objects, and soft archive on core CRM records. Full multi-field edit/delete/restore and cursor pagination remain open. |
+| CRM business transactions | Implemented baseline | Workspace-scoped document numbering, qualified lead conversion, and accepted-quote-to-order transaction functions exist; business-rule and edge-case tests still need expansion. |
+| Custom fields | Implemented baseline | Field definitions and typed values support options, defaults, validation, uniqueness, read-only metadata, and audit capture; required-field enforcement and field-level access need further review. |
+| AI acquisition | Implemented server-side baseline | Serper/Tavily adapters, optional Works adapter, evidence normalization, lead persistence, workspace authorization, audit capture, and initial request metering exist. Production secrets and exact Works API contract are not configured/confirmed. |
+| Finance, fulfillment, service, governance | Schema / UI baseline | Related schema and prototype areas exist; end-to-end commercial/financial processes and deeper business-rule tests remain incomplete. |
+| CI / database tests | Repository-reported pass | The existing setup guide records migrations through 00220 and 58 pgTAP assertions passing in GitHub Actions against a disposable local Supabase project. A production Supabase environment has not been migrated. |
+| Production readiness | Not complete | No claim of production deployment, live provider connectivity, full security sign-off, or end-to-end acceptance is made. |
+
+### Next tasks, in priority order
+
+1. Run and inspect the latest branch CI results; fix any build, migration, or test regressions before adding more features.
+2. Add workspace switching (or an explicit workspace-selection flow) instead of blocking users with more than one membership.
+3. Expand database/RLS tests for cross-workspace relationships, role boundaries, immutable audit records, lead conversion, quote expiry/acceptance, and custom-field validation.
+4. Complete multi-field edit forms, archive restore, relationship pickers, pagination, and create-time required-field enforcement.
+5. Add AI provider spend budgets, usage/cost observability, provider health handling, and safe secret configuration; verify the actual Works API contract before enabling it.
+6. Complete quote pricing/tax/versioning/approval and order, fulfillment, invoice, payment-allocation, refund, and reconciliation workflows.
+7. Perform accessibility, security, backup/recovery, and deployment/rollback reviews before production rollout.
+
+### Guardrails for continued implementation
+
+- Continue using the canonical `workspaces` / `workspace_memberships` schema and the existing migration sequence through 00220; do not introduce a parallel `organizations` schema.
+- Keep provider credentials server-side; browser `VITE_*` variables may contain only the Supabase URL and publishable/anon key.
+- Clearly distinguish live database records from demo fallback rows.
+- Treat a successful CI run as repository verification only, not proof that a production project or provider credentials are configured.
+
