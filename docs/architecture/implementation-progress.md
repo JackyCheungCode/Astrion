@@ -21,7 +21,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 ## Phase 2 — foundation
 - [ ] Align package manager and workspace tooling with the existing stack.
-- [ ] Establish lint, typecheck, test, and CI checks.
+- [x] Add GitHub Actions baseline web-build and pull-request database-test workflows.
+- [ ] Add lint/typecheck gates and validate the full workflow to green.
 - [x] Establish Carbon-based shared app shell and route-driven modular workspace prototype.
 - [ ] Establish auth, permissions, observability, and configuration validation.
 
@@ -58,7 +59,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - Architecture V2 skeleton: documentation and tracked directory placeholders only.
 - Normalized development standards: development rules documented; runtime implementation remains unverified.
 - Domain model and authorization draft: logical contracts only; no physical schema or permissions have been applied.
-- No dependency installation, database migration, secret creation, or deployment is included in these phases.
+- No production database migration, secret creation, or deployment has been run. Dependency installation/build and local Supabase migration tests are now defined in GitHub Actions.
 
 
 ## Frontend implementation note — 2026-10-24
@@ -77,7 +78,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add indexes for common workspace-scoped lookup, ownership, funnel, activity, and audit queries.
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
 - [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
-- [ ] Add automated schema/RLS tests, migration runner configuration, and seed data for local development.
+- [x] Add Supabase local configuration and 52 schema/RLS/transaction smoke assertions; successful execution is still pending.
+- [ ] Add representative tenant seed data and deeper role-boundary tests.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
 - [x] Add append-only audit triggers and atomic lead-conversion / quote-to-order transactions.
@@ -111,4 +113,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Align new work with the existing canonical `workspaces` / `workspace_memberships` schema and the existing 34-table CRM, commerce, service, finance, and governance model. No parallel organization schema is retained.
 - [x] Add concurrency-safe workspace-scoped document numbering for ACC, CON, LEA, OPP, QUO, and SO prefixes.
 - [x] Restrict custom-field definition mutations to owner/admin/sales-manager roles and restrict audit-log reads to owner/admin/sales-manager/analyst roles.
-- [ ] Apply migrations 00140–00170 in a disposable Supabase project; the repository code has not yet been applied to a live database.
+- [ ] Apply migrations 00140–00190 in a disposable Supabase project; the repository code has not yet been applied to a live database.
+
+- [x] Add role-aware write policies so analyst/read-only roles cannot mutate core business data.
+- [x] Add same-workspace relationship guards for core CRM links and polymorphic custom-field values.
