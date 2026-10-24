@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { supabase, supabaseConfigured } from './services/crmRepository.js';
 import {
   Add, ArrowRight, Search, Renew, Filter, CheckmarkFilled, Time, WarningAlt,
   Building, UserMultiple, Globe, ChartLine, SettingsAdjust
@@ -49,6 +50,13 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [filter, setFilter] = useState('all');
   const [tasks, setTasks] = useState(initialTasks);
+  const [searchQuery,setSearchQuery] = useState('');
+  const [searchResults,setSearchResults] = useState([]);
+  const [providerStatuses,setProviderStatuses] = useState([]);
+  const [worksResult,setWorksResult] = useState(null);
+  const [persistCandidates,setPersistCandidates] = useState(false);
+  const [searching,setSearching] = useState(false);
+  const [searchError,setSearchError] = useState('');
 
   const filteredTasks = useMemo(() => tasks.filter((task) => filter === 'all' || task.status === filter), [tasks, filter]);
 
@@ -64,6 +72,33 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
     setShowBuilder(false);
     setActiveTab('tasks');
     setNotice('获客任务已保存为前端草稿。数据源与后端任务队列尚未连接，暂未发起真实搜索。');
+  };
+
+  const handleDiscovery = async () => {
+    if (!supabaseConfigured || !supabase) {
+      setSearchError('当前仍是演示模式。请配置 Supabase 环境变量、部署 acquisition-research Edge Function，并在服务端配置搜索 API 密钥。');
+      return;
+    }
+    const query = searchQuery.trim() || (audience === 'b2c'
+      ? `${industry} consumer trends in ${region} market; ${intent} intent`
+      : `${industry} companies in ${region}; company size ${companySize}; ${intent} business signal`);
+    setSearching(true);
+    setSearchError('');
+    try {
+      const providers = source === 'both' ? ['serper','tavily'] : [source];
+      const { data,error } = await supabase.functions.invoke('acquisition-research',{
+        body:{query,providers,maxResults:Math.min(10,Math.max(1,Number(volume)||10)),persistCandidates},
+      });
+      if(error) throw error;
+      setSearchResults(Array.isArray(data?.results)?data.results:[]);
+      setProviderStatuses(Array.isArray(data?.providers)?data.providers:[]);
+      setWorksResult(data?.works||null);
+      setNotice(`搜索完成：${data?.results?.length||0} 条网页结果；${data?.persistedCount||0} 条线索已保存至待审核队列。`);
+    } catch(error) {
+      setSearchError(error?.message||'搜索请求失败，请检查 Edge Function 部署、登录状态和服务端密钥。');
+    } finally {
+      setSearching(false);
+    }
   };
 
   const pageTitle = activeTab === 'targets' ? '目标客户画像' : activeTab === 'discovery' ? '线索发现' : '获客任务';
@@ -147,14 +182,23 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
           </section>
         </TabPanel>
         <TabPanel>
-          <section className="acq-panel"><div className="acq-panel-heading"><div><h2>线索发现</h2><p>按地区、行业和业务信号发现候选企业；研究结果需经过证据审核。</p></div><Button renderIcon={Search} onClick={() => setNotice('线索发现 UI 已就绪；Serper/Tavily 搜索 API 尚未接入，未执行真实搜索。')}>开始发现</Button></div>
+          <section className="acq-panel"><div className="acq-panel-heading"><div><h2>线索发现</h2><p>按地区、行业和业务信号发现候选企业；研究结果需经过证据审核。</p></div><Button renderIcon={Search} onClick={handleDiscovery} disabled={searching}>{searching?'正在搜索…':'开始发现'}</Button></div>
             <div className="acq-discovery-grid">
-              <Tile className="acq-discovery-card"><div className="acq-discovery-number">01</div><h3>搜索发现</h3><p>Serper 搜索公开网页与企业站点，获取候选公司及可追溯 URL。</p><Tag type="cool-gray">Serper API · 待接入</Tag></Tile>
-              <Tile className="acq-discovery-card"><div className="acq-discovery-number">02</div><h3>深度研究</h3><p>Tavily 补充企业产品、市场、增长和业务匹配等公开证据。</p><Tag type="cool-gray">Tavily API · 待接入</Tag></Tile>
-              <Tile className="acq-discovery-card"><div className="acq-discovery-number">03</div><h3>评分与审核</h3><p>输出匹配度、置信度、证据摘要及人工审核状态，避免把推断当事实。</p><Tag type="cool-gray">AI 分析 · 待接入</Tag></Tile>
+              <Tile className="acq-discovery-card"><div className="acq-discovery-number">01</div><h3>搜索发现</h3><p>Serper 搜索公开网页与企业站点，获取候选公司及可追溯 URL。</p><Tag type={supabaseConfigured?'blue':'cool-gray'}>{supabaseConfigured?'Edge Function · 需配置密钥':'需配置 Supabase'}</Tag></Tile>
+              <Tile className="acq-discovery-card"><div className="acq-discovery-number">02</div><h3>深度研究</h3><p>Tavily 补充企业产品、市场、增长和业务匹配等公开证据。</p><Tag type={supabaseConfigured?'blue':'cool-gray'}>{supabaseConfigured?'Tavily 服务端适配器':'需配置 Supabase'}</Tag></Tile>
+              <Tile className="acq-discovery-card"><div className="acq-discovery-number">03</div><h3>公司信息补全</h3><p>可选 Works API 适配器补充企业档案和公开业务联系渠道；需确认供应商接口契约。</p><Tag type="cool-gray">Works API · 可选配置</Tag></Tile>
             </div>
+            <div className="acq-search-controls">
+              <TextInput id="acq-search-query" labelText="补充搜索关键词（可选）" value={searchQuery} onChange={(event)=>setSearchQuery(event.target.value)} placeholder="默认使用上方行业、地区、规模和信号选项生成查询"/>
+              <div className="acq-search-actions"><Checkbox id="acq-persist-candidates" labelText="将候选企业保存为待审核线索（不会自动外联）" checked={persistCandidates} onChange={(checked)=>setPersistCandidates(checked)}/><span className="acq-search-limit">每次最多返回 10 条结果，减少不必要的 API 调用。</span></div>
+            </div>
+            {searchError&&<InlineNotification kind="error" lowContrast title="线索发现未完成" subtitle={searchError}/>}
+            {providerStatuses.length>0&&<div className="acq-provider-status">{providerStatuses.map((provider)=> <Tag key={provider.provider} type={provider.status==='ok'?'green':provider.status==='skipped'?'cool-gray':'red'}>{provider.provider}: {provider.status}{provider.count!==undefined?` · ${provider.count}`:''}</Tag>)}</div>}
+            {searchResults.length>0&&<section className="acq-results-panel"><div className="acq-results-heading"><h3>搜索结果与证据</h3><span>{searchResults.length} 条结果</span></div>{searchResults.map((result,index)=><article className="acq-result-item" key={result.url||index}><div className="acq-result-meta"><Tag type="blue">{(result.providers||[result.provider]).join(' + ')}</Tag><span>{result.domain}</span></div><h4><a href={result.url} target="_blank" rel="noreferrer">{result.title}</a></h4><p>{result.snippet||'未提供摘要。'}</p><small>{result.url}</small></article>)}</section>}
+            {worksResult?.status==='ok'&&<InlineNotification kind="info" lowContrast title="Works API 已返回补全数据" subtitle="结果仅返回当前审核界面，未自动写入联系人或触发外联。请核对来源与授权后再保存。"/>}
+            {worksResult?.status==='error'&&<InlineNotification kind="warning" lowContrast title="Works API 暂不可用" subtitle={worksResult.message||'请检查服务端 endpoint 与密钥配置。'}/ >}
             <div className="acq-progress-panel"><div><h3>发现流程</h3><p>配置任务 → 搜索去重 → 深度研究 → AI 评分 → 人工审核 → CRM</p></div><ProgressBar label="前端界面完成度" value={100} max={100} helperText="仅表示界面骨架已完成，不代表 API 或数据源已连接。"/></div>
-            <InlineNotification kind="warning" lowContrast title="尚未发起真实搜索" subtitle="当前版本仅包含前端交互和示例数据。连接 Workers API、配置密钥并完成服务端实现后，才会产生真实线索。" hideCloseButton/>
+            <InlineNotification kind="info" lowContrast title="安全与审核说明" subtitle="API 密钥只保存在 Edge Function Secrets 中。候选企业默认仅展示证据；勾选保存后才会写入 CRM 线索队列，Works 返回的个人联系信息不会自动落库或触发外联。" hideCloseButton/>
           </section>
         </TabPanel>
       </TabPanels>
