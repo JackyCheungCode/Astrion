@@ -141,7 +141,7 @@ export default function Workspace() {
     </div>}
 
     <main className={`astrion-main ${sidebarOpen ? '' : 'is-wide'}`}>
-      {path.startsWith('/acquisition') ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <BusinessModulePage path={path} navigate={navigate} setNotice={setNotice} notice={notice} />}
+      {['/acquisition','/acquisition/tasks','/acquisition/targets','/acquisition/discovery'].includes(path) ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <BusinessModulePage path={path} navigate={navigate} setNotice={setNotice} notice={notice} />}
     </main>
 
     {searchOpen && <div className="astrion-search-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setSearchOpen(false); }}>
