@@ -26,7 +26,7 @@ const entityMap = {
     create: (name, number) => ({ contact_number:number, first_name:'New', last_name:name, consent_status:'unknown', source:'manual' }),
     hasAuditColumns: true, assignOwner: true,
     editName: (record) => [record.first_name,record.last_name].filter(Boolean).join(' '),
-    update: (name) => { const parts=name.trim().split(/\\s+/); return {first_name:parts.slice(0,-1).join(' '),last_name:parts.at(-1)||name}; },
+    update: (name) => { const parts=name.trim().split(/\s+/); return {first_name:parts.slice(0,-1).join(' '),last_name:parts.at(-1)||name}; },
   },
   '/crm/leads': {
     table: 'crm_leads', archived: true, prefix: 'LEA',
