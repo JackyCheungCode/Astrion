@@ -157,6 +157,8 @@ const NON_COMPANY_DOMAINS = new Set([
   "instagram.com", "linkedin.com", "wikipedia.org", "reddit.com", "x.com",
   "twitter.com", "tiktok.com", "pinterest.com",
 ]);
+const isNonCompanyDomain = (domain: string) =>
+  [...NON_COMPANY_DOMAINS].some((blocked) => domain === blocked || domain.endsWith(`.${blocked}`));
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
@@ -262,13 +264,13 @@ Deno.serve(async (request) => {
   let duplicatesSkipped = 0;
   const persistenceErrors: string[] = [];
   if (persistCandidates) {
-    const candidates = results.filter((result) => !NON_COMPANY_DOMAINS.has(result.domain)).slice(0, maxResults);
+    const candidates = results.filter((result) => !isNonCompanyDomain(result.domain)).slice(0, maxResults);
     for (const candidate of candidates) {
       try {
         const { data: duplicate, error: duplicateError } = await supabase
           .from("crm_leads").select("id")
           .eq("workspace_id", workspaceId)
-          .ilike("website", `%${candidate.domain}%`)
+          .in("website", [candidate.domain, `https://${candidate.domain}`, `http://${candidate.domain}`])
           .limit(1);
         if (duplicateError) throw duplicateError;
         if (duplicate?.length) {
