@@ -150,6 +150,42 @@ export function supportsPersistentRecords(path) {
   return Boolean(entityMap[path]);
 }
 
+const ACTIVE_WORKSPACE_KEY = 'astrion-active-workspace-id';
+
+export function getSelectedWorkspaceId() {
+  try { return window.localStorage.getItem(ACTIVE_WORKSPACE_KEY) || ''; }
+  catch { return ''; }
+}
+
+export function setSelectedWorkspaceId(workspaceId) {
+  try {
+    if (workspaceId) window.localStorage.setItem(ACTIVE_WORKSPACE_KEY, workspaceId);
+    else window.localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
+  } catch {
+    throw new Error('浏览器存储不可用，无法记住当前工作空间。');
+  }
+}
+
+export async function listWorkspaceMemberships() {
+  if (!supabase) return [];
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (!session?.user) throw new Error('请先登录，再读取工作空间。');
+  const { data, error } = await supabase
+    .from('workspace_memberships')
+    .select('workspace_id,role_key,workspace:workspaces(id,name,slug)')
+    .eq('user_id', session.user.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []).filter((item) => item.workspace).map((item) => ({
+    id: item.workspace_id,
+    name: item.workspace.name,
+    slug: item.workspace.slug,
+    role: item.role_key,
+  }));
+}
+
 async function getWorkspaceContext() {
   if (!supabase) throw new Error('未配置 Supabase。请设置 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY。');
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -158,13 +194,20 @@ async function getWorkspaceContext() {
   const { data, error } = await supabase
     .from('workspace_memberships')
     .select('workspace_id,role_key')
-    .eq('user_id',session.user.id)
-    .eq('is_active',true)
-    .limit(2);
+    .eq('user_id', session.user.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true });
   if (error) throw error;
   if (!data?.length) throw new Error('当前账号尚未加入工作空间。请由管理员完成成员配置。');
-  if (data.length > 1) throw new Error('当前账号加入了多个工作空间；工作空间切换器尚未启用，为防止跨组织误操作，当前请求已停止。');
-  return { workspaceId:data[0].workspace_id, userId:session.user.id, role:data[0].role_key };
+  const selectedId = getSelectedWorkspaceId();
+  const selected = selectedId ? data.find((item) => item.workspace_id === selectedId) : null;
+  if (selectedId && !selected) {
+    setSelectedWorkspaceId('');
+    if (data.length > 1) throw new Error('已选工作空间不再属于当前账号，请重新选择工作空间。');
+  }
+  if (data.length > 1 && !selected) throw new Error('当前账号加入了多个工作空间，请先在顶部选择工作空间。');
+  const membership = selected || data[0];
+  return { workspaceId: membership.workspace_id, userId: session.user.id, role: membership.role_key };
 }
 
 async function nextCrmNumber(prefix,workspaceId) {
