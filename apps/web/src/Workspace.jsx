@@ -73,7 +73,7 @@ export default function Workspace() {
       if (active) setWorkspaceLoading(false);
     });
     return () => { active = false; };
-  }, [authSession]);
+  }, [authSession?.user?.id]);
 
   const handleWorkspaceChange = ({ selectedItem }) => {
     if (!selectedItem || selectedItem.id === selectedWorkspaceId) return;
