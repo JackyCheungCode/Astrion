@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
@@ -141,7 +141,7 @@ function FieldConfiguration() {
       <TextInput id="bm-field-label" labelText="字段标签" value={label} onChange={(e)=>setLabel(e.target.value)} placeholder="例如：客户优先级"/>
       <div className="bm-generated-api"><span>API 名称（自动生成）</span><code>{generatedFieldName}</code></div>
       <Select id="bm-field-type" labelText="字段类型" value={fieldType} onChange={(e)=>setFieldType(e.target.value)}>{Object.entries(typeLabels).map(([value,text])=><SelectItem key={value} value={value} text={text}/>)}</Select>
-    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(e,{checked})=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(e,{checked})=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!label.trim()||fields.some((field)=>field.name===generatedFieldName)}>添加字段</Button></div></div>
+    </div><div className="bm-field-checks"><Checkbox id="bm-required" labelText="必填字段" checked={required} onChange={(checked)=>setRequired(checked)}/><Checkbox id="bm-unique" labelText="唯一值" checked={unique} onChange={(checked)=>setUnique(checked)}/><Button renderIcon={Add} onClick={addField} disabled={!label.trim()||fields.some((field)=>field.name===generatedFieldName)}>添加字段</Button></div></div>
   </div>;
 }
 
