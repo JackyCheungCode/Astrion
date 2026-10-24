@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { supabase, supabaseConfigured } from './services/crmRepository.js';
+import { supabase, supabaseConfigured, getSelectedWorkspaceId } from './services/crmRepository.js';
 import {
   Add, ArrowRight, Search, Renew, Filter, CheckmarkFilled, Time, WarningAlt,
   Building, UserMultiple, Globe, ChartLine, SettingsAdjust
@@ -91,7 +91,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
     try {
       const providers = source === 'both' ? ['serper','tavily'] : [source];
       const { data,error } = await supabase.functions.invoke('acquisition-research',{
-        body:{query,providers,maxResults:Math.min(10,Math.max(1,Number(volume)||10)),persistCandidates},
+        body:{query,providers,maxResults:Math.min(10,Math.max(1,Number(volume)||10)),persistCandidates,workspaceId:getSelectedWorkspaceId()||null},
       });
       if(error) throw error;
       setSearchResults(Array.isArray(data?.results)?data.results:[]);
