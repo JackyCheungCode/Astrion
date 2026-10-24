@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Menu, Search, Notification, Help, UserAvatar, Dashboard, Sparkles, UserMultiple,
-  Target, ShoppingCart, ChartLine, Bot, Settings, ChevronDown, ChevronRight,
-  Close, Add, ArrowRight, Grid, Launch, Document, Email, Checkmark
+  Menu, Search, Notification, Help, UserAvatar, Dashboard, MagicWand, UserMultiple,
+  Bullseye, ShoppingCart, ChartLine, ChatBot, Settings, ChevronDown, ChevronRight,
+  Close, Add, ArrowRight, Grid, Launch, Document
 } from '@carbon/icons-react';
 import { Button, TextInput, Tag } from '@carbon/react';
 import './workspace.scss';
@@ -13,7 +13,7 @@ import './workspace.scss';
  */
 export const astrionNavigation = [
   { label: '工作总览', path: '/dashboard', Icon: Dashboard },
-  { label: 'AI 获客', path: '/acquisition', Icon: Sparkles, children: [
+  { label: 'AI 获客', path: '/acquisition', Icon: MagicWand, children: [
     { label: '获客任务', path: '/acquisition/tasks' },
     { label: '目标客户', path: '/acquisition/targets' },
     { label: '线索发现', path: '/acquisition/discovery' },
@@ -23,7 +23,7 @@ export const astrionNavigation = [
     { label: '联系人', path: '/crm/contacts' },
     { label: '公司 / 客户', path: '/crm/accounts' },
   ]},
-  { label: '销售管道', path: '/sales', Icon: Target, children: [
+  { label: '销售管道', path: '/sales', Icon: Bullseye, children: [
     { label: '商机看板', path: '/sales/board' },
     { label: '商机列表', path: '/sales/opportunities' },
     { label: '报价管理', path: '/sales/quotes' },
@@ -38,7 +38,7 @@ export const astrionNavigation = [
     { label: '销售漏斗', path: '/analytics/funnel' },
     { label: '收入分析', path: '/analytics/revenue' },
   ]},
-  { label: 'AI 工作台', path: '/ai', Icon: Bot, children: [
+  { label: 'AI 工作台', path: '/ai', Icon: ChatBot, children: [
     { label: 'AI 助手', path: '/ai/assistant' },
     { label: '自动化工作流', path: '/ai/workflows' },
     { label: '执行记录', path: '/ai/runs' },
@@ -184,9 +184,9 @@ export default function Workspace() {
         <div className="astrion-card-title"><div><h2>快捷入口</h2><p>选择一个模块继续工作</p></div><Grid size={20} /></div>
         <div className="astrion-shortcuts">
           {[
-            { label: '线索发现', description: '探索并整理潜在客户', path: '/acquisition/discovery', Icon: Sparkles },
+            { label: '线索发现', description: '探索并整理潜在客户', path: '/acquisition/discovery', Icon: MagicWand },
             { label: '客户管理', description: '维护联系人与公司资料', path: '/crm/leads', Icon: UserMultiple },
-            { label: '商机看板', description: '跟踪销售阶段与进度', path: '/sales/board', Icon: Target },
+            { label: '商机看板', description: '跟踪销售阶段与进度', path: '/sales/board', Icon: Bullseye },
             { label: '分析报表', description: '查看漏斗与业务表现', path: '/analytics', Icon: ChartLine },
           ].map(({ label, description, path: shortcutPath, Icon }) => <button className="astrion-shortcut" key={shortcutPath} onClick={() => navigate(shortcutPath)}>
             <Icon size={24} /><span><strong>{label}</strong><small>{description}</small></span><ArrowRight size={18} />
