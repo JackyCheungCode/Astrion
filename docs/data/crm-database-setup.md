@@ -18,7 +18,7 @@ The repository already has a canonical workspace-based schema. Use the existing 
 12. `20261024000210_sales_order_customer_reference.sql` — add a customer reference field to sales orders.
 13. `20261024000220_custom_field_value_rules.sql` — enforce custom-field defaults, uniqueness, select options, numeric/text validation, read-only metadata, and audit capture.
 
-The migration chain through 00200 and all 55 pgTAP schema/policy/transaction/usage assertions passed before the customer-reference field was added against a disposable local Supabase project in GitHub Actions. This does not mean a production project has been provisioned.
+The migration chain through 00220 and all 58 pgTAP schema/policy/transaction/usage/custom-field assertions passed against a disposable local Supabase project in GitHub Actions. This does not mean a production project has been provisioned.
 
 ## Apply and verify
 
@@ -31,13 +31,13 @@ The migration chain through 00200 and all 55 pgTAP schema/policy/transaction/usa
 
 ## Current frontend repository adapter
 
-`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; primary-field edits for accounts, contacts, leads, opportunities, and quote notes; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. Acquisition requests are limited to 20 per user and 200 per workspace per rolling hour; these are initial guardrails, not a provider spend-budget system. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
+`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; primary-field edits and soft archive for supported CRM records; lead qualification/conversion; accepted-quote-to-order conversion; persistent custom-field definitions and typed custom-field values; CSV export; and a read-only audit-log view. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. Acquisition requests are limited to 20 per user and 200 per workspace per rolling hour; these are initial guardrails, not a provider spend-budget system. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
 
 If Supabase variables are absent, the UI remains in clearly labeled demo mode. If variables exist but authentication, workspace membership, or migrations are incomplete, the page reports the error and labels fallback rows as demo data.
 
 ## Remaining production work
 
-- Full multi-field edit forms, restore/physical-delete flows, cursor pagination, field-level authorization, record-create enforcement for required custom fields, restore/physical-delete flows, cursor pagination, and advanced relationship pickers. Core lists now hydrate key account relationships and support CSV export of the currently loaded/filtered rows.
+- Full multi-field edit forms for every business object, restore/physical-delete flows, cursor pagination, field-level authorization, record-create enforcement for required custom fields, and advanced relationship pickers. Core lists hydrate key account relationships and CSV export covers currently loaded/filtered rows.
 - Expand role-boundary tests with representative workspace/user fixtures and perform a security review before production.
 - Business-rule tests for lead conversion, quote acceptance/expiry, order creation, and audit capture.
 - Atomic pricing/tax calculations, quote versioning rules, approvals, and finance reconciliation.
