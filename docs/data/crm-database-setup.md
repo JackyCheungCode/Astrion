@@ -14,6 +14,7 @@ The repository already has a canonical workspace-based schema. Use the existing 
 8. `20261024000170_crm_field_metadata_permissions.sql` — restrict custom field schema changes to authorized workspace roles.
 9. `20261024000180_workspace_role_write_permissions.sql` — prevent read-only/analyst roles from mutating business data and apply module-specific write roles.
 10. `20261024000190_workspace_relationship_guards.sql` — validate same-workspace core references and custom-field record scope.
+11. `20261024000200_ai_acquisition_usage_limits.sql` — enforce 20 requests/user/hour and 200 requests/workspace/hour with server-side metering.
 
 The migration chain and 52 pgTAP schema/policy assertions passed against a disposable local Supabase project in GitHub Actions. This does not mean a production project has been provisioned.
 
@@ -28,7 +29,7 @@ The migration chain and 52 pgTAP schema/policy assertions passed against a dispo
 
 ## Current frontend repository adapter
 
-`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
+`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. Acquisition requests are limited to 20 per user and 200 per workspace per rolling hour; these are initial guardrails, not a provider spend-budget system. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
 
 If Supabase variables are absent, the UI remains in clearly labeled demo mode. If variables exist but authentication, workspace membership, or migrations are incomplete, the page reports the error and labels fallback rows as demo data.
 
