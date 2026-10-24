@@ -22,7 +22,7 @@ const selectOptions = {
   industry: [{ value: 'saas', label: '软件 / SaaS' }, { value: 'manufacturing', label: '制造业' }, { value: 'ecommerce', label: '电子商务' }, { value: 'finance', label: '金融服务' }, { value: 'health', label: '医疗健康' }, { value: 'professional', label: '专业服务' }, { value: 'other', label: '其他行业' }],
   companySize: [{ value: 'any', label: '不限规模' }, { value: '1-50', label: '1–50 人' }, { value: '51-200', label: '51–200 人' }, { value: '201-1000', label: '201–1,000 人' }, { value: '1000+', label: '1,000 人以上' }],
   intent: [{ value: 'high', label: '高购买意向' }, { value: 'growth', label: '正在增长 / 扩张' }, { value: 'hiring', label: '近期招聘相关岗位' }, { value: 'technology', label: '技术升级 / 数字化' }, { value: 'all', label: '综合信号' }],
-  volume: [{ value: '25', label: '25 条线索' }, { value: '50', label: '50 条线索' }, { value: '100', label: '100 条线索' }, { value: '250', label: '250 条线索' }],
+  volume: [{ value: '5', label: '5 条线索' }, { value: '10', label: '10 条线索（单次上限）' }],
   source: [{ value: 'both', label: 'Serper + Tavily（推荐）' }, { value: 'serper', label: 'Serper — 搜索发现' }, { value: 'tavily', label: 'Tavily — 深度研究' }],
 };
 
@@ -44,7 +44,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [industry, setIndustry] = useState('saas');
   const [companySize, setCompanySize] = useState('51-200');
   const [intent, setIntent] = useState('high');
-  const [volume, setVolume] = useState('50');
+  const [volume, setVolume] = useState('10');
   const [source, setSource] = useState('both');
   const [research, setResearch] = useState(true);
   const [score, setScore] = useState(true);
