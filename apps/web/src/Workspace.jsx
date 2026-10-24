@@ -182,7 +182,7 @@ export default function Workspace() {
           onChange={handleWorkspaceChange}
           disabled={workspaceLoading || workspaceMemberships.length < 2}
         />
-      </div>
+      </div>}
       <Button kind="ghost" hasIconOnly renderIcon={Search} iconDescription="全局搜索" onClick={() => setSearchOpen(true)} />
       <Button kind="ghost" hasIconOnly renderIcon={Notification} iconDescription="通知" onClick={() => setNotice('通知中心暂未接入。')} />
       <Button kind="ghost" hasIconOnly renderIcon={Help} iconDescription="帮助" onClick={() => setNotice('帮助中心暂未接入。')} />
