@@ -40,6 +40,33 @@ const records = {
   '/settings/integrations': { title:'集成配置', description:'管理搜索数据源、AI 服务、外部系统和 Webhook。', integrations:true },
 };
 
+records['/acquisition/contacts'] = {
+  ...records['/crm/contacts'],
+  title:'联系人发现',
+  description:'查看与线索相关的联系人主数据；真实记录受工作空间权限控制。',
+};
+records['/acquisition/review'] = {
+  ...records['/crm/leads'],
+  title:'线索审核队列',
+  description:'审核搜索发现的候选企业、来源和资格状态；保存的候选记录默认需要人工核验。',
+  columns:['线索编号','候选公司','来源','评分','证据状态','审核状态'],
+  rows:[['LEA-DEMO-01','Northstar Industries','Serper','—','needs_review','new'],['LEA-DEMO-02','BluePeak Systems','Tavily','—','needs_review','new']],
+};
+records['/acquisition/scoring'] = {
+  ...records['/crm/leads'],
+  title:'评分与证据',
+  description:'集中查看线索评分、证据状态与来源链接。尚未自动生成 AI 评分。',
+  columns:['线索编号','候选公司','评分','证据状态','证据来源','审核状态'],
+  rows:[['LEA-DEMO-01','Northstar Industries','—','needs_review','公开网页证据','new'],['LEA-DEMO-02','BluePeak Systems','—','needs_review','企业网站','new']],
+};
+records['/acquisition/research'] = {
+  ...records['/crm/leads'],
+  title:'企业研究',
+  description:'查看企业网站、研究状态与来源 URL；来源证据保留供人工复核。',
+  columns:['线索编号','候选公司','企业网站','研究状态','来源 URL','发现时间'],
+  rows:[['LEA-DEMO-01','Northstar Industries','northstar.example','needs_review','https://example.com','演示数据'],['LEA-DEMO-02','BluePeak Systems','bluepeak.example','needs_review','https://example.org','演示数据']],
+};
+
 const defaultColumns = ['编号','名称','所属对象','负责人','状态','更新时间'];
 const defaultRows = [['REC-0001','示例业务记录','客户账户','系统管理员','待配置','2026-10-24'],['REC-0002','示例业务记录','联系人','销售团队 A','待配置','2026-10-23'],['REC-0003','示例业务记录','商机','销售团队 B','待配置','2026-10-22']];
 const statusType = (value) => /有效|已验证|已完成|成功|已确认|已核对|已分配/.test(value) ? 'green' : /待审核|待审批|待处理|处理中|等待|准备中/.test(value) ? 'warm-gray' : /风险|失败|拒绝|逾期/.test(value) ? 'red' : 'blue';
@@ -66,7 +93,7 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord }) {
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
       <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
-      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onOpenRecord(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><div className="bm-row-actions">{config.path==='/crm/leads'&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转化</Button>}{config.path==='/sales/quotes'&&config.isPersistent&&row['6']==='accepted'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转订单</Button>}<Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="查看记录详情" onClick={()=>onOpenRecord(row)}/></div></TableCell></TableRow>)}</TableBody>
+      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onOpenRecord(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><div className="bm-row-actions">{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转化</Button>}{config.path==='/sales/quotes'&&config.isPersistent&&row['6']==='accepted'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转订单</Button>}<Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="查看记录详情" onClick={()=>onOpenRecord(row)}/></div></TableCell></TableRow>)}</TableBody>
     </Table>
     <div className="bm-table-footer"><span>显示 {filtered.length} 条记录 · {config.isPersistent ? '数据库数据' : '演示数据'}</span><Pagination pageSizes={[5,10,20]} pageSize={pageSize} totalItems={filtered.length} onChange={({pageSize:nextSize})=>setPageSize(nextSize)} /></div>
   </TableContainer>;
@@ -238,7 +265,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
   };
   const handleConvert = async (recordId) => {
     try {
-      if (path === '/crm/leads') { await convertLeadToAccount(recordId); setNotice('线索已通过原子业务事务转化为客户账户与联系人。'); }
+      if (['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(path)) { await convertLeadToAccount(recordId); setNotice('线索已通过原子业务事务转化为客户账户与联系人。'); }
       else if (path === '/sales/quotes') { await convertQuoteToOrder(recordId); setNotice('报价已通过原子业务事务转化为销售订单。'); }
       await reloadPersistentRecords();
     } catch (error) { setNotice(error?.message || '业务转化失败，请检查状态、权限和数据库迁移。'); }
