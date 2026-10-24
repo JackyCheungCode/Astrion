@@ -1,6 +1,6 @@
 -- Run with Supabase CLI: supabase test db
 begin;
-select plan(24);
+select plan(37);
 
 select has_table('public','workspaces');
 select has_table('public','workspace_memberships');
@@ -23,6 +23,20 @@ select has_table('public','crm_campaign_members');
 select has_table('public','automation_workflows');
 select has_table('public','automation_runs');
 select has_table('public','crm_notifications');
+
+select has_table('public','crm_shipments');
+select has_table('public','crm_shipment_lines');
+select has_table('public','crm_contracts');
+select has_table('public','crm_invoices');
+select has_table('public','crm_payments');
+select has_table('public','crm_service_work_orders');
+select has_table('public','crm_sla_policies');
+select has_table('public','crm_approval_requests');
+select has_table('public','crm_import_jobs');
+select has_table('public','crm_duplicate_rules');
+select has_table('public','crm_duplicate_reviews');
+select has_table('public','integration_connections');
+select has_table('public','integration_sync_runs');
 
 select ok(
   (select c.relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace
