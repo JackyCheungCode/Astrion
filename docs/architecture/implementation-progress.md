@@ -129,3 +129,6 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 
 - [x] Route AI acquisition review, scoring, research, and contact pages to workspace-scoped CRM records instead of the generic task view.
 - [x] Add lead qualification/disqualification actions; conversion is surfaced only after a lead is marked qualified.
+
+- [x] Add CSV export of the current filtered table result set and a read-only audit-log view (visibility follows audit RLS).
+- [x] Add confirmation-based soft archive for core accounts, contacts, leads, and opportunities; full restore and deletion flows remain pending.
