@@ -42,5 +42,7 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Test acquisition workspace and evidence helpers
+        run: deno test supabase/functions/_shared/acquisition-utils.test.ts
       - name: Type-check acquisition Edge Function
         run: deno check supabase/functions/acquisition-research/index.ts
