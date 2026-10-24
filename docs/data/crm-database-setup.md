@@ -1,24 +1,37 @@
 # CRM database setup
 
-This repository contains a reviewed starting point for the CRM schema, not a claim that a live Supabase project has been provisioned.
+The repository already has a canonical workspace-based schema. Use the existing migration chain; do not create a parallel organization schema.
 
-## Apply the migration
+## Migration sequence
+
+1. `supabase/migrations/20261024000100_crm_core_foundation.sql` — workspaces, memberships, accounts, contacts, leads, opportunities, activities, custom field metadata/values, audit events.
+2. `20261024000110_crm_core_rls.sql` — workspace membership helpers and tenant RLS for core CRM data.
+3. `20261024000120_commerce_service_automation.sql` — products, quotes/lines, sales orders/lines, service cases, campaigns, workflows, runs, notifications.
+4. `20261024000130_fulfillment_finance_governance.sql` — shipments, contracts, invoices, payments, service work orders, SLA policies, approvals, imports, duplicate review, and integrations.
+5. `20261024000140_crm_business_transactions.sql` — atomic lead conversion and accepted-quote-to-order functions.
+6. `20261024000150_crm_document_numbering.sql` — concurrency-safe workspace-scoped document numbers.
+7. `20261024000160_crm_audit_capture.sql` — audit triggers and restricted audit visibility.
+8. `20261024000170_crm_field_metadata_permissions.sql` — restrict custom field schema changes to authorized workspace roles.
+
+## Apply and verify
 
 1. Create/select the intended Supabase project and confirm its region, backups, retention, and data-processing terms.
-2. Review `supabase/migrations/20261024000100_crm_core_schema.sql` with the project owner/security reviewer.
-3. Apply it using the Supabase CLI migration workflow from a trusted development environment, or through the SQL editor after review. Do not run against production without a backup and change approval.
-4. Configure the web app from `apps/web/.env.example` as `apps/web/.env.local`. Only the project URL and publishable/anon key belong in browser variables. Never use the service-role key in the browser.
-5. Create a test user through Supabase Auth, then provision an organization and its first owner membership through a trusted administrator process. The migration intentionally does not expose public organization/membership creation.
-6. Sign in and confirm that a user without an active membership sees no CRM rows. Test cross-organization read/write denial with two separate test organizations before importing customer data.
+2. Review all migrations with the project owner/security reviewer.
+3. Apply the full migration sequence using the Supabase CLI from a trusted development environment, or through the SQL editor after review. Do not run against production without a backup and change approval.
+4. Configure the web app from `apps/web/.env.example` as `apps/web/.env.local`. Only the project URL and publishable/anon key belong in browser variables. Never use a service-role key in browser code or any `VITE_*` variable.
+5. Create a test user through Supabase Auth and provision a workspace plus an owner membership through a trusted administrator process. The migrations intentionally do not expose public workspace provisioning.
+6. Sign in and confirm a user without an active workspace membership sees no CRM rows. Test cross-workspace read/write denial using two separate test workspaces before importing customer data.
 
 ## Current frontend repository adapter
 
-`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and selects an active organization membership. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders. The adapter is intentionally limited; it does not yet implement edit/delete, pagination cursors, object relationship hydration, custom-field persistence, audit event writes, or transactional business flows.
+`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented.
 
-If the Supabase variables are absent, the UI stays in clearly labeled demo mode. If variables exist but authentication/membership/schema setup is incomplete, the page reports the error and continues to label fallback rows as demo data.
+If Supabase variables are absent, the UI remains in clearly labeled demo mode. If variables exist but authentication, workspace membership, or migrations are incomplete, the page reports the error and labels fallback rows as demo data.
 
-## Schema scope
+## Remaining production work
 
-The migration introduces organization membership and role helpers; CRM accounts, contacts, leads, opportunities, products, quotes, sales orders, activities, field definitions, and append-only audit records. JSONB custom fields are a storage extension point, not a substitute for metadata validation, field-level authorization, or safe typed query generation.
-
-Before production, add reviewed policies for each business action, database tests for RLS and tenant isolation, sequence-backed business numbering, atomic quote-to-order and lead-conversion transactions, approval records, and server-side integrations for external providers.
+- Edit/delete flows, cursor pagination, relationship hydration, typed field-value persistence, field-level authorization, and safe dynamic validation.
+- Complete RLS tests and a disposable-project migration run.
+- Business-rule tests for lead conversion, quote acceptance/expiry, order creation, and audit capture.
+- Atomic pricing/tax calculations, quote versioning rules, approvals, and finance reconciliation.
+- Server-side adapters for Serper, Tavily, and Works API; credentials must remain server-side.
