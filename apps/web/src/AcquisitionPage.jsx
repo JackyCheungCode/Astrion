@@ -166,7 +166,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
               <div className="acq-checks">
                 <Checkbox id="acq-research" labelText="对候选企业进行网页深度研究（Tavily）" checked={research} onChange={(checked) => setResearch(checked)}/>
                 <Checkbox id="acq-score" labelText="启用证据质量评分（规则评分，不代表购买意向）" checked={score} onChange={(checked) => setScore(checked)}/>
-                <Checkbox id="acq-verified" labelText="仅展示具备可追溯来源的结果" checked={verifiedOnly} onChange={(checked) => setVerifiedOnly(checked)}/>
+                <Checkbox id="acq-verified" labelText="仅展示带网页摘要的可追溯来源" checked={verifiedOnly} onChange={(checked) => setVerifiedOnly(checked)}/>
               </div>
             </div>
             <InlineNotification kind="info" lowContrast title="数据与隐私说明" subtitle="仅规划采集公开、合法可用的信息；每条线索应保留来源链接、采集时间、证据与置信度。外联发送与消费者画像功能需在后续接入授权与合规校验。" hideCloseButton/>
