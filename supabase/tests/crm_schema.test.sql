@@ -62,16 +62,16 @@ select has_function('public','convert_lead_to_account',ARRAY['uuid','text','text
 select has_function('public','convert_accepted_quote_to_order',ARRAY['uuid','text']);
 select has_trigger('public','crm_accounts','crm_accounts_audit_event');
 select has_trigger('public','crm_quotes','crm_quotes_audit_event');
-select has_policy('public','crm_custom_field_definitions','crm_custom_field_definitions_admin_insert');
-select has_policy('public','audit_events','audit_admin_select');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='crm_custom_field_definitions' and policyname='crm_custom_field_definitions_admin_insert'),'custom field insert policy exists');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='audit_events' and policyname='audit_admin_select'),'restricted audit read policy exists');
 
 
 select has_trigger('public','crm_leads','crm_leads_workspace_link_guard');
 select has_trigger('public','crm_custom_field_values','crm_custom_field_values_scope_guard');
-select has_policy('public','crm_accounts','crm_accounts_role_insert');
-select has_policy('public','crm_accounts','crm_accounts_role_update');
-select has_policy('public','crm_custom_field_definitions','crm_custom_field_definitions_admin_update');
-select has_policy('public','crm_number_counters','crm_number_counters_member_select');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='crm_accounts' and policyname='crm_accounts_role_insert'),'account role insert policy exists');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='crm_accounts' and policyname='crm_accounts_role_update'),'account role update policy exists');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='crm_custom_field_definitions' and policyname='crm_custom_field_definitions_admin_update'),'custom field update policy exists');
+select ok(exists(select 1 from pg_policies where schemaname='public' and tablename='crm_number_counters' and policyname='crm_number_counters_member_select'),'number counter member policy exists');
 
 select * from finish();
 rollback;
