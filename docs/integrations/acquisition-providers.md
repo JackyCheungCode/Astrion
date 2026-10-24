@@ -34,4 +34,4 @@ The endpoint should return JSON. Its response is passed back to the authenticate
 - The first release does not perform AI-based ICP scoring, infer missing contact data, or automate email/call outreach.
 - Deduplication is a conservative website-match check; use the CRM duplicate-review module for broader matching.
 - The function does not store raw Works responses or personal contact details automatically.
-- Production rate limiting, provider spend budgets, retry queues, and usage dashboards remain to be implemented.
+Initial server-side limits are 20 searches per user and 200 per workspace per rolling hour. Provider-specific spend budgets, retry queues, usage dashboards, and retention cleanup remain to be implemented.
