@@ -39,9 +39,9 @@ begin
       ('integration_sync_runs', ARRAY['owner','admin','sales_manager']::text[])
     ) as policy_map(table_name,write_roles)
   loop
-    execute format('drop policy if exists %I on public.%I',r.table_name,r.table_name||'_member_insert');
-    execute format('drop policy if exists %I on public.%I',r.table_name,r.table_name||'_member_update');
-    execute format('drop policy if exists %I on public.%I',r.table_name,r.table_name||'_member_delete');
+    execute format('drop policy if exists %I on public.%I',r.table_name||'_member_insert',r.table_name);
+    execute format('drop policy if exists %I on public.%I',r.table_name||'_member_update',r.table_name);
+    execute format('drop policy if exists %I on public.%I',r.table_name||'_member_delete',r.table_name);
 
     execute format(
       'create policy %I on public.%I for insert to authenticated with check (private.has_workspace_role(workspace_id,%L::text[]))',
