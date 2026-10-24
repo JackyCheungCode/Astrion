@@ -96,15 +96,12 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
       idealCustomerNotes.trim() && `Ideal customer context: ${idealCustomerNotes.trim()}`,
       excludedTargets.trim() && `Exclude: ${excludedTargets.trim()}`,
     ].filter(Boolean).join('; ');
-    const generatedQuery = [
-      audience === 'b2c'
-        ? `${industryLabel} consumer trends in ${regionLabel} market; ${intentLabel}`
-        : audience === 'both'
-          ? `${industryLabel} companies and consumer demand in ${regionLabel}; ${intentLabel}`
-          : `${industryLabel} companies in ${regionLabel}; company size ${sizeLabel}; ${intentLabel} business signal`,
-      profileContext,
-    ].filter(Boolean).join('; ');
-    const query = searchQuery.trim() || generatedQuery;
+    const generatedQuery = audience === 'b2c'
+      ? `${industryLabel} consumer trends in ${regionLabel} market; ${intentLabel}`
+      : audience === 'both'
+        ? `${industryLabel} companies and consumer demand in ${regionLabel}; ${intentLabel}`
+        : `${industryLabel} companies in ${regionLabel}; company size ${sizeLabel}; ${intentLabel} business signal`;
+    const query = [searchQuery.trim() || generatedQuery, profileContext].filter(Boolean).join('; ');
     setSearching(true);
     setSearchError('');
     setSearchResults([]);
