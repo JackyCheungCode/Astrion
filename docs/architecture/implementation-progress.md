@@ -171,3 +171,11 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - Clearly distinguish live database records from demo fallback rows.
 - Treat a successful CI run as repository verification only, not proof that a production project or provider credentials are configured.
 
+## Work completed today — 2026-10-24
+
+- [x] Add the Carbon workspace selector to the authenticated application shell for users with multiple active workspace memberships.
+- [x] Load workspace options from the canonical `workspace_memberships` / `workspaces` relation and display the selected workspace in the IBM-style top bar.
+- [x] Persist the selected workspace ID in browser storage; default to the first authorized membership when no valid selection exists. The repository adapter still validates membership server-side through Supabase RLS and workspace-scoped queries.
+- [x] Remount the current business/acquisition page after switching workspace so page-level data is reloaded under the newly selected tenant context.
+- [x] Add an inline Carbon error notification for membership-loading / storage failures and responsive top-bar styling for the selector.
+- [ ] Build and runtime verification of the workspace selector remains pending in this environment. The latest branch commit did not return CI status checks or PR-associated workflow runs through the available status endpoint; this is not evidence of a passing build.
