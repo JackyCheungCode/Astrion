@@ -1,0 +1,22 @@
+{
+  "name": "@astrion/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@carbon/icons-react": "^11.74.0",
+    "@carbon/react": "^1.95.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "sass-embedded": "^1.89.2",
+    "vite": "^6.1.0"
+  }
+}
