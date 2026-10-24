@@ -72,19 +72,57 @@ function GenericTable({ config, onCreate }) {
 }
 
 function FieldConfiguration() {
+  const fieldsByObject = {
+    account: [
+      {name:'account_number',label:'账户编号',type:'自动编号',required:true,unique:true},
+      {name:'account_name',label:'客户名称',type:'文本',required:true,unique:false},
+      {name:'industry',label:'行业',type:'单选下拉框',required:false,unique:false},
+      {name:'annual_revenue',label:'年收入',type:'金额',required:false,unique:false},
+      {name:'owner_id',label:'负责人',type:'用户关联',required:false,unique:false},
+    ],
+    contact: [
+      {name:'contact_number',label:'联系人编号',type:'自动编号',required:true,unique:true},
+      {name:'full_name',label:'联系人姓名',type:'文本',required:true,unique:false},
+      {name:'account_id',label:'所属客户',type:'对象关联',required:true,unique:false},
+      {name:'job_title',label:'职位',type:'文本',required:false,unique:false},
+      {name:'email',label:'业务邮箱',type:'文本',required:false,unique:true},
+    ],
+    lead: [
+      {name:'lead_number',label:'线索编号',type:'自动编号',required:true,unique:true},
+      {name:'lead_name',label:'线索名称',type:'文本',required:true,unique:false},
+      {name:'source',label:'线索来源',type:'单选下拉框',required:true,unique:false},
+      {name:'score',label:'线索评分',type:'数字',required:false,unique:false},
+      {name:'qualification_status',label:'资格状态',type:'单选下拉框',required:true,unique:false},
+    ],
+    opportunity: [
+      {name:'opportunity_number',label:'商机编号',type:'自动编号',required:true,unique:true},
+      {name:'opportunity_name',label:'商机名称',type:'文本',required:true,unique:false},
+      {name:'account_id',label:'客户账户',type:'对象关联',required:true,unique:false},
+      {name:'stage',label:'销售阶段',type:'单选下拉框',required:true,unique:false},
+      {name:'expected_revenue',label:'预计金额',type:'金额',required:true,unique:false},
+    ],
+    quote: [
+      {name:'quote_number',label:'报价编号',type:'自动编号',required:true,unique:true},
+      {name:'opportunity_id',label:'关联商机',type:'对象关联',required:true,unique:false},
+      {name:'currency',label:'币种',type:'单选下拉框',required:true,unique:false},
+      {name:'discount_percent',label:'折扣比例',type:'数字',required:false,unique:false},
+      {name:'valid_until',label:'有效期至',type:'日期',required:true,unique:false},
+    ],
+    order: [
+      {name:'sales_order_number',label:'销售订单编号',type:'自动编号',required:true,unique:true},
+      {name:'account_id',label:'客户账户',type:'对象关联',required:true,unique:false},
+      {name:'order_date',label:'订单日期',type:'日期',required:true,unique:false},
+      {name:'total_amount',label:'订单金额',type:'金额',required:true,unique:false},
+      {name:'fulfillment_status',label:'履约状态',type:'单选下拉框',required:true,unique:false},
+    ],
+  };
   const [objectName,setObjectName] = useState('account');
   const [fieldName,setFieldName] = useState('');
   const [label,setLabel] = useState('');
   const [fieldType,setFieldType] = useState('text');
   const [required,setRequired] = useState(false);
   const [unique,setUnique] = useState(false);
-  const [fields,setFields] = useState([
-    {name:'account_number',label:'账户编号',type:'自动编号',required:true,unique:true},
-    {name:'account_name',label:'客户名称',type:'文本',required:true,unique:false},
-    {name:'industry',label:'行业',type:'单选下拉框',required:false,unique:false},
-    {name:'annual_revenue',label:'年收入',type:'金额',required:false,unique:false},
-    {name:'owner_id',label:'负责人',type:'用户关联',required:false,unique:false},
-  ]);
+  const [fields,setFields] = useState(fieldsByObject.account);
   const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
   const addField = () => {
     if (!fieldName.trim() || !label.trim()) return;
@@ -92,7 +130,7 @@ function FieldConfiguration() {
     setFieldName('');setLabel('');setRequired(false);setUnique(false);
   };
   return <div className="bm-field-config">
-    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>当前修改仅保存在浏览器内存中；正式保存需要连接元数据 API。</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>setObjectName(e.target.value)}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
+    <div className="bm-config-toolbar"><div><h2>对象字段</h2><p>当前修改仅保存在浏览器内存中；正式保存需要连接元数据 API。</p></div><Select id="bm-object" labelText="业务对象" value={objectName} onChange={(e)=>{const next=e.target.value;setObjectName(next);setFields(fieldsByObject[next]||fieldsByObject.account);}}><SelectItem value="account" text="客户账户 Account"/><SelectItem value="contact" text="联系人 Contact"/><SelectItem value="lead" text="线索 Lead"/><SelectItem value="opportunity" text="商机 Opportunity"/><SelectItem value="quote" text="报价 Quote"/><SelectItem value="order" text="销售订单 Sales Order"/></Select></div>
     <div className="bm-field-list"><div className="bm-field-head"><span>字段标签</span><span>API 名称</span><span>类型</span><span>规则</span><span>操作</span></div>
       {fields.map((field,index)=><div className="bm-field-row" key={field.name}><div><strong>{field.label}</strong><small>{field.required?'必填':'可选'}{field.unique?' · 唯一':''}</small></div><code>{field.name}</code><span>{field.type}</span><span>{field.required?<Tag type="red">必填</Tag>:<Tag type="cool-gray">可选</Tag>}{field.unique&&<Tag type="blue">唯一</Tag>}</span><Button kind="ghost" size="sm" hasIconOnly renderIcon={TrashCan} iconDescription="删除字段" disabled={['account_number','account_name'].includes(field.name)} onClick={()=>setFields((prev)=>prev.filter((_,i)=>i!==index))}/></div>)}
     </div>
