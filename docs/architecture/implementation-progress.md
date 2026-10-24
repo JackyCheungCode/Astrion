@@ -65,3 +65,14 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - Added a shared business module page for dashboards, tables, search/filter, local draft creation, sales pipeline board, analytics, custom fields, workflow steps, AI assistant, user/role previews, and integration settings.
 - All records and metrics in the prototype are explicitly demo data. CRUD changes remain local to the current browser view; no database writes, external searches, authentication, or provider API calls are performed.
 - Build verification remains pending because the current execution environment cannot resolve GitHub for a local clone and dependency installation.
+
+
+## CRM foundation progress — 2026-10-24
+
+- [x] Add initial tenant-scoped PostgreSQL schema for workspaces, memberships, accounts, contacts, leads, opportunities, activities, custom-field definitions/values, and audit events.
+- [x] Add indexes for common workspace-scoped lookup, ownership, funnel, activity, and audit queries.
+- [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
+- [ ] Validate migrations against a real disposable Supabase project and run database security advisors.
+- [ ] Add automated schema/RLS tests, migration runner configuration, and seed data for local development.
+- [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
+- [ ] Add tenant-safe relationship constraints, field-level authorization, immutable audit triggers, and reviewed record-conversion transaction.
