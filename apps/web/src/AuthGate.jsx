@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Login } from '@carbon/icons-react';
+import { ArrowRight } from '@carbon/icons-react';
 import { Button, InlineNotification, TextInput } from '@carbon/react';
 import { supabase } from './services/crmRepository.js';
 import './auth-gate.scss';
