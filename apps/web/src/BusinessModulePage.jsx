@@ -263,7 +263,7 @@ function BoardPanel() {
 }
 
 function parseCsvFile(text) {
-  const source=text.replace(/^\\uFEFF/,'');
+  const source=text.replace(/^\uFEFF/,'');
   const rows=[];
   let row=[],cell='',quoted=false;
   for(let index=0;index<source.length;index++){
@@ -272,8 +272,8 @@ function parseCsvFile(text) {
       if(quoted&&source[index+1]==='"'){cell+='"';index++;}
       else quoted=!quoted;
     }else if(char===','&&!quoted){row.push(cell);cell='';}
-    else if((char==='\\n'||char==='\\r')&&!quoted){
-      if(char==='\\r'&&source[index+1]==='\\n')index++;
+    else if((char==='\n'||char==='\r')&&!quoted){
+      if(char==='\\r'&&source[index+1]==='\n')index++;
       row.push(cell);
       if(row.some((value)=>value.trim()!==''))rows.push(row);
       row=[];cell='';
