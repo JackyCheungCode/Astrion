@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
-  Add, Search, Filter, Download, OverflowMenuHorizontal, ChevronDown, ChevronRight,
-  Building, UserMultiple, UserFollow, Bullseye, Task, Calendar, ChartLine, Settings,
-  DataBase, Flow, Document, CheckmarkFilled, WarningAlt, Renew, View, Edit, TrashCan,
-  Save, Close, Launch, ArrowUpRight, Time, Tag as TagIcon
+  Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
+  DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time
 } from '@carbon/icons-react';
 import {
-  Button, TextInput, Select, SelectItem, Tag, DataTable, Table, TableHead,
+  Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
   TableToolbarSearch, TableContainer, Pagination, Tile, InlineNotification,
-  Tabs, TabList, Tab, TabPanels, TabPanel, Modal, TextArea, NumberInput,
-  Checkbox, Toggle, Dropdown
+  Modal, TextArea, Checkbox
 } from '@carbon/react';
 import './business-module.scss';
 
@@ -68,7 +65,7 @@ function GenericTable({ config, onCreate }) {
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
       <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
-      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onCreate(row)}>{row[key]}</button> : key === String(columns.length-1) ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="记录操作" onClick={()=>onCreate(row)}/></TableCell></TableRow>)}</TableBody>
+      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onCreate(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="记录操作" onClick={()=>onCreate(row)}/></TableCell></TableRow>)}</TableBody>
     </Table>
     <div className="bm-table-footer"><span>显示 {filtered.length} 条记录 · 演示数据</span><Pagination pageSizes={[5,10,20]} pageSize={pageSize} totalItems={filtered.length} onChange={({pageSize:nextSize})=>setPageSize(nextSize)} /></div>
   </TableContainer>;
