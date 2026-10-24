@@ -46,7 +46,7 @@ const statusType = (value) => /有效|已验证|已完成|成功|已确认|已�
 
 function Metric({label,value,foot}) { return <Tile className="bm-metric"><span>{label}</span><strong>{value}</strong><small>{foot}</small></Tile>; }
 
-function GenericTable({ config, onCreate }) {
+function GenericTable({ config, onCreate, onConvert }) {
   const [query,setQuery] = useState('');
   const [status,setStatus] = useState('all');
   const [pageSize,setPageSize] = useState(10);
