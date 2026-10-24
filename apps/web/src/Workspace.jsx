@@ -3,13 +3,13 @@ import {
   Menu, Search, Notification, Help, UserAvatar, ChevronDown, ChevronRight,
   Close, Add, ArrowRight, Grid, Launch, Document
 } from '@carbon/icons-react';
-import { Button, TextInput } from '@carbon/react';
+import { Button, TextInput, Dropdown, InlineNotification } from '@carbon/react';
 import './workspace.scss';
 import AcquisitionPage from './AcquisitionPage.jsx';
 import BusinessModulePage from './BusinessModulePage.jsx';
 import { astrionNavigation } from './navigation/astrion-navigation.js';
 import AuthGate from './AuthGate.jsx';
-import { supabase, supabaseConfigured } from './services/crmRepository.js';
+import { supabase, supabaseConfigured, listWorkspaceMemberships, getSelectedWorkspaceId, setSelectedWorkspaceId } from './services/crmRepository.js';
 
 
 const iconByPath = new Map();
@@ -33,6 +33,10 @@ export default function Workspace() {
   const [query, setQuery] = useState('');
   const [notice, setNotice] = useState('');
   const [authSession, setAuthSession] = useState(undefined);
+  const [workspaceMemberships, setWorkspaceMemberships] = useState([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState('');
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState('');
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) { setAuthSession(null); return undefined; }
@@ -41,6 +45,47 @@ export default function Workspace() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setAuthSession(session));
     return () => { active = false; subscription.unsubscribe(); };
   }, []);
+
+  useEffect(() => {
+    if (!supabaseConfigured || !supabase || !authSession) {
+      setWorkspaceMemberships([]);
+      setSelectedWorkspaceIdState('');
+      setWorkspaceError('');
+      return undefined;
+    }
+    let active = true;
+    setWorkspaceLoading(true);
+    listWorkspaceMemberships().then((memberships) => {
+      if (!active) return;
+      setWorkspaceMemberships(memberships);
+      const savedId = getSelectedWorkspaceId();
+      const selected = memberships.find((item) => item.id === savedId) || memberships[0];
+      if (selected) {
+        if (selected.id !== savedId) setSelectedWorkspaceId(selected.id);
+        setSelectedWorkspaceIdState(selected.id);
+      } else {
+        setSelectedWorkspaceIdState('');
+      }
+      setWorkspaceError('');
+    }).catch((error) => {
+      if (active) setWorkspaceError(error?.message || '无法加载工作空间列表。');
+    }).finally(() => {
+      if (active) setWorkspaceLoading(false);
+    });
+    return () => { active = false; };
+  }, [authSession]);
+
+  const handleWorkspaceChange = ({ selectedItem }) => {
+    if (!selectedItem || selectedItem.id === selectedWorkspaceId) return;
+    try {
+      setSelectedWorkspaceId(selectedItem.id);
+      setSelectedWorkspaceIdState(selectedItem.id);
+      setWorkspaceError('');
+      setNotice('已切换工作空间。当前页面正在刷新数据。');
+    } catch (error) {
+      setWorkspaceError(error?.message || '无法切换工作空间。');
+    }
+  };
 
   useEffect(() => {
     const onPopState = () => setPath(readInitialPath());
@@ -125,6 +170,19 @@ export default function Workspace() {
         }} />
       <button className="astrion-wordmark" onClick={() => navigate('/dashboard')} aria-label="Astrion 首页">Astrion</button>
       <div className="astrion-topbar-spacer" />
+      {supabaseConfigured && authSession && workspaceMemberships.length > 0 && <div className="astrion-workspace-switcher">
+        <Dropdown
+          id="astrion-workspace-selector"
+          titleText="工作空间"
+          label="选择工作空间"
+          size="sm"
+          items={workspaceMemberships.map((item) => ({ ...item, label: item.name || item.slug || item.id, roleLabel: item.role || '成员' }))}
+          itemToString={(item) => item?.label || ''}
+          selectedItem={workspaceMemberships.map((item) => ({ ...item, label: item.name || item.slug || item.id })).find((item) => item.id === selectedWorkspaceId) || null}
+          onChange={handleWorkspaceChange}
+          disabled={workspaceLoading || workspaceMemberships.length < 2}
+        />
+      </div>
       <Button kind="ghost" hasIconOnly renderIcon={Search} iconDescription="全局搜索" onClick={() => setSearchOpen(true)} />
       <Button kind="ghost" hasIconOnly renderIcon={Notification} iconDescription="通知" onClick={() => setNotice('通知中心暂未接入。')} />
       <Button kind="ghost" hasIconOnly renderIcon={Help} iconDescription="帮助" onClick={() => setNotice('帮助中心暂未接入。')} />
@@ -141,7 +199,8 @@ export default function Workspace() {
     </div>}
 
     <main className={`astrion-main ${sidebarOpen ? '' : 'is-wide'}`}>
-      {['/acquisition','/acquisition/tasks','/acquisition/targets','/acquisition/discovery'].includes(path) ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <BusinessModulePage path={path} navigate={navigate} setNotice={setNotice} notice={notice} />}
+      {workspaceError && <InlineNotification kind="error" lowContrast title="工作空间加载失败" subtitle={workspaceError} onCloseButtonClick={() => setWorkspaceError('')} />}
+      {['/acquisition','/acquisition/tasks','/acquisition/targets','/acquisition/discovery'].includes(path) ? <AcquisitionPage key={`${selectedWorkspaceId}:${path}`} path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <BusinessModulePage key={`${selectedWorkspaceId}:${path}`} path={path} navigate={navigate} setNotice={setNotice} notice={notice} />}
     </main>
 
     {searchOpen && <div className="astrion-search-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setSearchOpen(false); }}>
