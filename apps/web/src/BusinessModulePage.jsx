@@ -3,7 +3,7 @@ import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
 } from '@carbon/icons-react';
-import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, setLeadStatus, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
+import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, archiveCrmRecord, setLeadStatus, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
 import {
   Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
@@ -270,6 +270,18 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
     setDetailOpen(true);
   };
   const reloadPersistentRecords = async () => { const result = await listCrmRecords(path); setPersistentConfig(result); setPersistentError(''); };
+  const handleArchive = async () => {
+    if(!selectedRecord?.id)return;
+    try{
+      await archiveCrmRecord(path,selectedRecord.id);
+      await reloadPersistentRecords();
+      setDetailOpen(false);
+      setNotice('记录已归档，并从默认列表中隐藏。');
+    }catch(error){setNotice(error?.message||'归档失败，请检查工作空间权限。');}
+  };
+  const confirmArchive = () => {
+    if(window.confirm('确认归档此记录？归档后它将从默认列表中隐藏。')) void handleArchive();
+  };
   const saveRecordEdit = async () => {
     if(!selectedRecord?.id)return;
     setEditBusy(true);
@@ -344,13 +356,13 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
     {config.settings&&<SettingsPanel type="workspace"/>}
     {path==='/settings/users'&&<SettingsPanel type="users"/>}
     {config.integrations&&<SettingsPanel type="integrations"/>}
-    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames,canCreate:persistentConfig?.canCreate??config.canCreate??true}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
+    {config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames,canCreate:persistentConfig?.canCreate??config.canCreate??true,canArchive:persistentConfig?.canArchive??false}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
     <div className="bm-page-foot"><span><DataBase size={14}/> Astrion 元数据驱动业务界面</span><span>当前为前端原型 · 真实持久化、权限校验与服务端 API 尚未连接</span></div>
     <Modal open={createOpen} modalHeading="新建业务记录" primaryButtonText="保存草稿" secondaryButtonText="取消" onRequestClose={()=>setCreateOpen(false)} onRequestSubmit={saveDraft} size="md">
       <div className="bm-create-form"><TextInput id="bm-record-name" labelText="记录名称" value={draft.name} onChange={(e)=>setDraft((prev)=>({...prev,name:e.target.value}))} placeholder="输入名称"/>{(!persistentSupported||!supabaseConfigured)&&<><Select id="bm-record-type" labelText="记录类型" value={draft.type} onChange={(e)=>setDraft((prev)=>({...prev,type:e.target.value}))}><SelectItem value="standard" text="标准记录"/><SelectItem value="strategic" text="战略客户"/><SelectItem value="qualified" text="已资格审核"/><SelectItem value="partner" text="合作伙伴"/></Select><Select id="bm-record-owner" labelText="负责人" value={draft.owner} onChange={(e)=>setDraft((prev)=>({...prev,owner:e.target.value}))}><SelectItem value="team-a" text="销售团队 A"/><SelectItem value="team-b" text="销售团队 B"/><SelectItem value="marketing" text="营销运营"/><SelectItem value="system" text="系统管理员"/></Select><Select id="bm-record-status" labelText="状态" value={draft.status} onChange={(e)=>setDraft((prev)=>({...prev,status:e.target.value}))}><SelectItem value="new" text="新建"/><SelectItem value="review" text="待审核"/><SelectItem value="active" text="有效"/><SelectItem value="paused" text="暂停"/></Select><InlineNotification kind="info" lowContrast title="演示模式" subtitle="此操作仅更新当前页面状态，不会写入数据库。"/></>}{persistentSupported&&supabaseConfigured&&<InlineNotification kind="info" lowContrast title="数据库保存" subtitle="系统将生成业务编号并保存名称与必要默认字段；其他字段编辑将在后续表单中开放。"/>}</div>
     </Modal>
     <Modal open={detailOpen} modalHeading="记录详情" primaryButtonText="完成" onRequestClose={()=>setDetailOpen(false)} onRequestSubmit={()=>setDetailOpen(false)} size="md">
-      {selectedRecord&&<div className="bm-record-detail"><div className="bm-record-detail-id"><span>记录 ID</span><code>{selectedRecord.id}</code></div><div className="bm-record-detail-grid">{selectedRecord.values.map((item,index)=><div key={index}><span>{item.label}</span><strong>{String(item.value??'—')}</strong></div>)}</div>{persistentConfig&&typeof selectedRecord.editName==='string'&&<div className="bm-record-edit"><TextInput id="bm-record-edit-name" labelText="编辑主字段" value={editValue} onChange={(event)=>setEditValue(event.target.value)}/><Button renderIcon={Save} disabled={editBusy||!editValue.trim()} onClick={saveRecordEdit}>{editBusy?'正在保存…':'保存更改'}</Button></div>}<InlineNotification kind="info" lowContrast title={persistentConfig?'数据库记录':'演示记录'} subtitle={persistentConfig?'此版本支持查看与部分业务转化；编辑、删除和完整关联记录仍在开发中。':'这是示例记录，不会修改数据库。'}/></div>}
+      {selectedRecord&&<div className="bm-record-detail"><div className="bm-record-detail-id"><span>记录 ID</span><code>{selectedRecord.id}</code></div><div className="bm-record-detail-grid">{selectedRecord.values.map((item,index)=><div key={index}><span>{item.label}</span><strong>{String(item.value??'—')}</strong></div>)}</div>{persistentConfig&&typeof selectedRecord.editName==='string'&&<div className="bm-record-edit"><TextInput id="bm-record-edit-name" labelText="编辑主字段" value={editValue} onChange={(event)=>setEditValue(event.target.value)}/><Button renderIcon={Save} disabled={editBusy||!editValue.trim()} onClick={saveRecordEdit}>{editBusy?'正在保存…':'保存更改'}</Button></div>}{persistentConfig?.canArchive&&<Button kind="danger--tertiary" renderIcon={TrashCan} onClick={confirmArchive}>归档记录</Button>}<InlineNotification kind="info" lowContrast title={persistentConfig?'数据库记录':'演示记录'} subtitle={persistentConfig?'此版本支持查看与部分业务转化；编辑、删除和完整关联记录仍在开发中。':'这是示例记录，不会修改数据库。'}/></div>}
     </Modal>
   </div>;
 }
