@@ -1,0 +1,18 @@
+# Dependencies and build artifacts
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+
+# Local environment and secrets
+.env
+.env.*
+**/.env.local
+!**/.env.example
+
+# Local Supabase state and OS/editor files
+.supabase/
+.DS_Store
+.vscode/
+.idea/
