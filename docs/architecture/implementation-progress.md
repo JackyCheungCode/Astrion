@@ -72,7 +72,19 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add initial tenant-scoped PostgreSQL schema for workspaces, memberships, accounts, contacts, leads, opportunities, activities, custom-field definitions/values, and audit events.
 - [x] Add indexes for common workspace-scoped lookup, ownership, funnel, activity, and audit queries.
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
-- [ ] Validate migrations against a real disposable Supabase project and run database security advisors.
+- [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
 - [ ] Add automated schema/RLS tests, migration runner configuration, and seed data for local development.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
-- [ ] Add tenant-safe relationship constraints, field-level authorization, immutable audit triggers, and reviewed record-conversion transaction.
+- [x] Add composite workspace-safe foreign keys across core CRM relationships.
+- [ ] Add field-level authorization, immutable audit triggers, and reviewed record-conversion transaction.
+
+
+## Commerce and service schema — 2026-10-24
+
+- [x] Add product catalog, quote and quote-line, sales-order and order-line tables.
+- [x] Add customer service cases with priority, status, SLA timestamps, and assignment.
+- [x] Add marketing campaigns and campaign-member attribution.
+- [x] Add workflow definitions and execution records, plus per-user notification inbox.
+- [x] Add tenant-scoped indexes and RLS policies to these additional tables.
+- [x] Change custom-field API names in the UI to generated read-only keys; keep field type, required, and unique choices in controls.
+- [ ] Execute a full Vite build and database migration test in a network-enabled project environment; this has not been verified here.
