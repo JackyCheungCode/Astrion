@@ -238,7 +238,7 @@ Deno.serve(async (request) => {
     } catch (error) {
       works = { status: "error", message: error instanceof Error ? error.message : "Works API request failed" };
     }
-    providerStatuses.push({ provider: "works", status: works.status });
+    providerStatuses.push({ provider: "works", status: works.status, ...(works.message ? { message: works.message } : {}) });
   }
 
   let persistedCount = 0;
