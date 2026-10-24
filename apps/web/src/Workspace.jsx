@@ -127,7 +127,7 @@ export default function Workspace() {
     </div>}
 
     <main className={`astrion-main ${sidebarOpen ? '' : 'is-wide'}`}>
-      {path.startsWith('/acquisition') ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} /> : <>
+      {path.startsWith('/acquisition') ? <AcquisitionPage path={path} navigate={navigate} setNotice={setNotice} notice={notice} /> : <>
         <div className="astrion-breadcrumb"><span>工作空间</span><span>/</span><strong>{current.label}</strong></div>
         <div className="astrion-page-heading">
           <div><h1>{current.label}</h1><p>统一管理 Astrion 的获客、客户关系与销售流程。</p></div>
