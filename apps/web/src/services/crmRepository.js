@@ -103,6 +103,42 @@ entityMap['/data/audit'] = {
   map:(record)=>[record.action_key,record.object_key,record.record_id||'—',record.actor_user_id||'系统',new Date(record.created_at).toLocaleString(),JSON.stringify(record.metadata||{}).slice(0,180)],
 };
 
+entityMap['/crm/accounts'].importNameField='name';
+entityMap['/crm/accounts'].importFields=[
+  {key:'name',label:'客户名称',type:'text'},{key:'industry',label:'行业',type:'text'},{key:'website',label:'企业网站',type:'url'},
+  {key:'annual_revenue',label:'年收入',type:'number'},{key:'phone',label:'电话',type:'phone'},{key:'billing_country',label:'国家/地区',type:'text'},
+  {key:'account_type',label:'客户类型',type:'text'},{key:'lifecycle_stage',label:'生命周期',type:'text'},{key:'source',label:'来源',type:'text'},
+];
+entityMap['/crm/contacts'].importNameField='last_name';
+entityMap['/crm/contacts'].importFields=[
+  {key:'first_name',label:'名',type:'text'},{key:'last_name',label:'姓',type:'text'},{key:'email',label:'业务邮箱',type:'email'},
+  {key:'phone',label:'电话',type:'phone'},{key:'job_title',label:'职位',type:'text'},{key:'account_id',label:'所属客户 ID',type:'uuid'},
+  {key:'country_code',label:'国家/地区代码',type:'text'},{key:'consent_status',label:'同意状态',type:'text'},
+];
+entityMap['/crm/leads'].importNameField='company_name';
+entityMap['/crm/leads'].importFields=[
+  {key:'company_name',label:'候选公司',type:'text'},{key:'website',label:'企业网站',type:'url'},{key:'lead_source',label:'来源',type:'text'},
+  {key:'source_detail',label:'来源 URL',type:'url'},{key:'score',label:'评分',type:'number'},{key:'status',label:'审核状态',type:'text'},
+  {key:'enrichment_status',label:'证据状态',type:'text'},
+];
+entityMap['/sales/opportunities'].importNameField='name';
+entityMap['/sales/opportunities'].importFields=[
+  {key:'name',label:'商机名称',type:'text'},{key:'account_id',label:'客户账户 ID',type:'uuid'},{key:'stage',label:'销售阶段',type:'text'},
+  {key:'amount',label:'预计金额',type:'number'},{key:'probability',label:'概率',type:'number'},{key:'expected_close_date',label:'预计关闭',type:'date'},
+  {key:'status',label:'状态',type:'text'},
+];
+entityMap['/sales/quotes'].importNameField='notes';
+entityMap['/sales/quotes'].importFields=[
+  {key:'account_id',label:'客户账户 ID',type:'uuid'},{key:'opportunity_id',label:'关联商机 ID',type:'uuid'},{key:'currency',label:'币种',type:'text'},
+  {key:'total_amount',label:'报价金额',type:'number'},{key:'status',label:'状态',type:'text'},{key:'notes',label:'报价备注',type:'text'},
+];
+entityMap['/orders/list'].importNameField='customer_reference';
+entityMap['/orders/list'].importFields=[
+  {key:'account_id',label:'客户账户 ID',type:'uuid'},{key:'quote_id',label:'关联报价 ID',type:'uuid'},{key:'order_date',label:'订单日期',type:'date'},
+  {key:'currency',label:'币种',type:'text'},{key:'total_amount',label:'订单金额',type:'number'},{key:'status',label:'状态',type:'text'},
+  {key:'customer_reference',label:'客户参考号',type:'text'},
+];
+
 const displayValue = (key,value) => {
   if (value === null || value === undefined || value === '') return '—';
   if (key === 'amount' || key === 'total_amount') return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(Number(value));
@@ -166,6 +202,53 @@ export async function createCrmRecord(path,name) {
   const { data,error } = await supabase.from(config.table).insert(payload).select('id').single();
   if (error) throw error;
   return data;
+}
+
+export function getCrmImportFields(path) {
+  return entityMap[path]?.importFields || [];
+}
+
+export async function importCrmRows(path,rows) {
+  const config=entityMap[path];
+  if(!config?.importFields||!config.create)throw new Error('该对象暂不支持 CSV 导入。');
+  if(!Array.isArray(rows)||!rows.length)throw new Error('没有可导入的数据行。');
+  const {workspaceId,userId}=await getWorkspaceContext();
+  const allowed=new Map(config.importFields.map((field)=>[field.key,field]));
+  const errors=[];
+  let imported=0;
+  for(let index=0;index<rows.length;index++){
+    const source=rows[index]||{};
+    try{
+      const values={};
+      for(const [key,raw] of Object.entries(source)){
+        const field=allowed.get(key);
+        if(!field||raw===undefined||raw===null||String(raw).trim()==='')continue;
+        if(['number','decimal','currency'].includes(field.type)){
+          const number=Number(raw);
+          if(!Number.isFinite(number))throw new Error(`字段“${field.label}”不是有效数字`);
+          values[key]=number;
+        }else if(field.type==='uuid'){
+          const value=String(raw).trim();
+          if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))throw new Error(`字段“${field.label}”必须是有效 UUID`);
+          values[key]=value;
+        }else values[key]=String(raw).trim();
+      }
+      const name=String(values[config.importNameField]??'').trim();
+      if(['account','lead','opportunity'].includes(config.objectKey)&&!name)throw new Error('缺少必填的主名称字段');
+      if(config.objectKey==='contact'&&!String(values.last_name??'').trim())throw new Error('联系人必须提供“姓”字段');
+      const {data:number,error:numberError}=await supabase.rpc('next_crm_number',{p_workspace_id:workspaceId,p_prefix:config.prefix});
+      if(numberError)throw numberError;
+      const payload={...config.create(name||'Imported record',number),...values,workspace_id:workspaceId};
+      if(config.hasAuditColumns){payload.created_by=userId;payload.updated_by=userId;}
+      if(config.assignOwner)payload.owner_user_id=userId;
+      const {error}=await supabase.from(config.table).insert(payload);
+      if(error)throw error;
+      imported++;
+    }catch(error){
+      errors.push({row:index+2,message:error?.message||'导入失败'});
+    }
+  }
+  return {imported,failed:errors.length,errors};
 }
 
 export async function listRecordCustomFields(path,recordId) {
