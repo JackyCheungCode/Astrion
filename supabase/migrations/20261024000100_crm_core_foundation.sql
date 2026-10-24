@@ -43,6 +43,7 @@ create table if not exists public.crm_accounts (
  created_by uuid references auth.users(id) on delete set null,
  updated_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), archived_at timestamptz,
+ unique(workspace_id,id),
  unique(workspace_id,account_number)
 );
 create table if not exists public.crm_contacts (
@@ -60,6 +61,7 @@ create table if not exists public.crm_contacts (
  source text, external_ids jsonb not null default '{}'::jsonb, attributes jsonb not null default '{}'::jsonb,
  created_by uuid references auth.users(id) on delete set null, updated_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), archived_at timestamptz,
+ unique(workspace_id,id),
  unique(workspace_id,contact_number)
 );
 create table if not exists public.crm_leads (
@@ -81,6 +83,7 @@ create table if not exists public.crm_leads (
  enrichment_evidence jsonb not null default '[]'::jsonb, external_ids jsonb not null default '{}'::jsonb, attributes jsonb not null default '{}'::jsonb,
  created_by uuid references auth.users(id) on delete set null, updated_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), archived_at timestamptz,
+ unique(workspace_id,id),
  unique(workspace_id,lead_number)
 );
 create table if not exists public.crm_opportunities (
@@ -100,6 +103,7 @@ create table if not exists public.crm_opportunities (
  external_ids jsonb not null default '{}'::jsonb, attributes jsonb not null default '{}'::jsonb,
  created_by uuid references auth.users(id) on delete set null, updated_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), archived_at timestamptz,
+ unique(workspace_id,id),
  unique(workspace_id,opportunity_number)
 );
 create table if not exists public.crm_activities (
@@ -117,6 +121,7 @@ create table if not exists public.crm_activities (
  related_opportunity_id uuid references public.crm_opportunities(id) on delete cascade,
  outcome text, created_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+ unique(workspace_id,id),
  check (num_nonnulls(related_account_id,related_contact_id,related_lead_id,related_opportunity_id) >= 1)
 );
 create table if not exists public.crm_custom_field_definitions (
@@ -132,6 +137,7 @@ create table if not exists public.crm_custom_field_definitions (
  visibility_rules jsonb not null default '{}'::jsonb, display_order integer not null default 0,
  is_active boolean not null default true, created_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+ unique(workspace_id,id),
  unique(workspace_id,object_key,field_key)
 );
 create table if not exists public.crm_custom_field_values (
@@ -150,6 +156,44 @@ create table if not exists public.audit_events (
  occurred_at timestamptz not null default now(), request_id text,
  before_data jsonb, after_data jsonb, metadata jsonb not null default '{}'::jsonb
 );
+
+-- Composite foreign keys prevent records from linking across workspace boundaries.
+alter table public.crm_accounts drop constraint if exists crm_accounts_parent_same_workspace;
+alter table public.crm_accounts add constraint crm_accounts_parent_same_workspace
+ foreign key (workspace_id,parent_account_id) references public.crm_accounts(workspace_id,id) on delete no action;
+alter table public.crm_contacts drop constraint if exists crm_contacts_account_same_workspace;
+alter table public.crm_contacts add constraint crm_contacts_account_same_workspace
+ foreign key (workspace_id,account_id) references public.crm_accounts(workspace_id,id) on delete no action;
+alter table public.crm_leads drop constraint if exists crm_leads_converted_account_same_workspace;
+alter table public.crm_leads add constraint crm_leads_converted_account_same_workspace
+ foreign key (workspace_id,converted_account_id) references public.crm_accounts(workspace_id,id) on delete no action;
+alter table public.crm_leads drop constraint if exists crm_leads_converted_contact_same_workspace;
+alter table public.crm_leads add constraint crm_leads_converted_contact_same_workspace
+ foreign key (workspace_id,converted_contact_id) references public.crm_contacts(workspace_id,id) on delete no action;
+alter table public.crm_opportunities drop constraint if exists crm_opportunities_account_same_workspace;
+alter table public.crm_opportunities add constraint crm_opportunities_account_same_workspace
+ foreign key (workspace_id,account_id) references public.crm_accounts(workspace_id,id) on delete no action;
+alter table public.crm_opportunities drop constraint if exists crm_opportunities_contact_same_workspace;
+alter table public.crm_opportunities add constraint crm_opportunities_contact_same_workspace
+ foreign key (workspace_id,primary_contact_id) references public.crm_contacts(workspace_id,id) on delete no action;
+alter table public.crm_opportunities drop constraint if exists crm_opportunities_lead_same_workspace;
+alter table public.crm_opportunities add constraint crm_opportunities_lead_same_workspace
+ foreign key (workspace_id,lead_id) references public.crm_leads(workspace_id,id) on delete no action;
+alter table public.crm_activities drop constraint if exists crm_activities_account_same_workspace;
+alter table public.crm_activities add constraint crm_activities_account_same_workspace
+ foreign key (workspace_id,related_account_id) references public.crm_accounts(workspace_id,id) on delete no action;
+alter table public.crm_activities drop constraint if exists crm_activities_contact_same_workspace;
+alter table public.crm_activities add constraint crm_activities_contact_same_workspace
+ foreign key (workspace_id,related_contact_id) references public.crm_contacts(workspace_id,id) on delete no action;
+alter table public.crm_activities drop constraint if exists crm_activities_lead_same_workspace;
+alter table public.crm_activities add constraint crm_activities_lead_same_workspace
+ foreign key (workspace_id,related_lead_id) references public.crm_leads(workspace_id,id) on delete no action;
+alter table public.crm_activities drop constraint if exists crm_activities_opportunity_same_workspace;
+alter table public.crm_activities add constraint crm_activities_opportunity_same_workspace
+ foreign key (workspace_id,related_opportunity_id) references public.crm_opportunities(workspace_id,id) on delete no action;
+alter table public.crm_custom_field_values drop constraint if exists crm_custom_values_field_same_workspace;
+alter table public.crm_custom_field_values add constraint crm_custom_values_field_same_workspace
+ foreign key (workspace_id,field_definition_id) references public.crm_custom_field_definitions(workspace_id,id) on delete no action;
 
 create index if not exists idx_memberships_user_workspace on public.workspace_memberships(user_id,workspace_id) where is_active;
 create index if not exists idx_accounts_workspace_name on public.crm_accounts(workspace_id,name) where archived_at is null;
