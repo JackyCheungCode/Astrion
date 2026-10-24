@@ -3,7 +3,7 @@ import {
   Add, Download, OverflowMenuHorizontal, ChevronRight, ChartLine, Settings,
   DataBase, Flow, TrashCan, Save, Launch, ArrowUpRight, Time, Edit, Renew
 } from '@carbon/icons-react';
-import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, archiveCrmRecord, setLeadStatus, listRecordCustomFields, saveRecordCustomField, getCrmImportFields, importCrmRows, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
+import { createCrmRecord, listCrmRecords, supportsPersistentRecords, supabaseConfigured, convertLeadToAccount, convertQuoteToOrder, updateCrmRecord, archiveCrmRecord, restoreCrmRecord, setLeadStatus, listRecordCustomFields, saveRecordCustomField, getCrmImportFields, importCrmRows, listFieldDefinitions, createFieldDefinition, deleteFieldDefinition } from './services/crmRepository.js';
 import {
   Button, TextInput, Select, SelectItem, Tag, Table, TableHead,
   TableRow, TableHeader, TableBody, TableCell, TableToolbar, TableToolbarContent,
@@ -85,7 +85,7 @@ const statusType = (value) => /有效|已验证|已完成|成功|已确认|已�
 
 function Metric({label,value,foot}) { return <Tile className="bm-metric"><span>{label}</span><strong>{value}</strong><small>{foot}</small></Tile>; }
 
-function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, onDisqualify }) {
+function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, onDisqualify, onRestore, onToggleArchived }) {
   const [query,setQuery] = useState('');
   const [status,setStatus] = useState('all');
   const [pageSize,setPageSize] = useState(10);
@@ -93,7 +93,7 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, on
   const rows = config.rows || defaultRows;
   const filtered = rows.map((row,sourceIndex)=>({row,sourceIndex,recordId:config.recordIds?.[sourceIndex]})).filter(({row}) => row.join(' ').toLowerCase().includes(query.toLowerCase()) && (status === 'all' || row.some((cell) => cell === status)));
   const headers = columns.map((header,key) => ({key,header}));
-  const dataRows = filtered.map(({row,sourceIndex,recordId},i) => ({id:recordId||String(i),recordName:config.recordNames?.[sourceIndex],...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
+  const dataRows = filtered.map(({row,sourceIndex,recordId},i) => ({id:recordId||String(i),recordName:config.recordNames?.[sourceIndex],isArchived:config.recordArchivedFlags?.[sourceIndex]===true,...Object.fromEntries(columns.map((col,j)=>[String(j),row[j] ?? '—']))}));
   const exportCsv = () => {
     const csvRows=[columns,...filtered.map(({row})=>row)];
     const csv=csvRows.map((row)=>row.map((value)=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
@@ -111,12 +111,13 @@ function GenericTable({ config, onCreate, onConvert, onOpenRecord, onQualify, on
       <Select id="bm-status-filter" labelText="状态筛选" hideLabel size="md" value={status} onChange={(e)=>setStatus(e.target.value)}>
         <SelectItem value="all" text="全部状态"/><SelectItem value="有效" text="有效"/><SelectItem value="待审核" text="待审核"/><SelectItem value="处理中" text="处理中"/><SelectItem value="草稿" text="草稿"/>
       </Select>
+      {config.isPersistent&&config.canArchive&&<Checkbox id="bm-show-archived" labelText="仅查看已归档" checked={Boolean(config.includeArchived)} onChange={(checked)=>onToggleArchived?.(checked)}/>}
       <Button kind="tertiary" renderIcon={Download} onClick={exportCsv}>导出筛选结果</Button>
       {config.canCreate!==false&&<Button renderIcon={Add} onClick={onCreate}>新建记录</Button>}
     </TableToolbarContent></TableToolbar>
     <Table size="lg" useZebraStyles={false}>
       <TableHead><TableRow>{headers.map((header)=><TableHeader key={header.key}>{header.header}</TableHeader>)}<TableHeader>操作</TableHeader></TableRow></TableHead>
-      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onOpenRecord(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><div className="bm-row-actions">{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&row['5']!=='qualified'&&<Button kind="tertiary" size="sm" onClick={()=>onQualify?.(row.id)}>标记合格</Button>}{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']==='qualified'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转化</Button>}{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&<Button kind="ghost" size="sm" onClick={()=>onDisqualify?.(row.id)}>排除</Button>}{config.path==='/sales/quotes'&&config.isPersistent&&row['6']==='accepted'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转订单</Button>}<Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="查看记录详情" onClick={()=>onOpenRecord(row)}/></div></TableCell></TableRow>)}</TableBody>
+      <TableBody>{dataRows.map((row,i)=><TableRow key={row.id}>{headers.map(({key,header})=><TableCell key={key}>{key === '0' ? <button className="bm-record-link" onClick={()=>onOpenRecord(row)}>{row[key]}</button> : header === '状态' ? <Tag type={statusType(row[key])}>{row[key]}</Tag> : row[key]}</TableCell>)}<TableCell><div className="bm-row-actions">{row.isArchived&&config.isPersistent?<Button kind="tertiary" size="sm" onClick={()=>onRestore?.(row.id)}>恢复记录</Button>:<>{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&row['5']!=='qualified'&&<Button kind="tertiary" size="sm" onClick={()=>onQualify?.(row.id)}>标记合格</Button>}{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']==='qualified'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转化</Button>}{['/crm/leads','/acquisition/review','/acquisition/scoring','/acquisition/research'].includes(config.path)&&config.isPersistent&&row['5']!=='converted'&&row['5']!=='disqualified'&&<Button kind="ghost" size="sm" onClick={()=>onDisqualify?.(row.id)}>排除</Button>}{config.path==='/sales/quotes'&&config.isPersistent&&row['6']==='accepted'&&<Button kind="tertiary" size="sm" onClick={()=>onConvert?.(row.id)}>转订单</Button>}<Button kind="ghost" size="sm" hasIconOnly renderIcon={OverflowMenuHorizontal} iconDescription="查看记录详情" onClick={()=>onOpenRecord(row)}/></>}</div></TableCell></TableRow>)}</TableBody>
     </Table>
     <div className="bm-table-footer"><span>显示 {filtered.length} 条记录 · {config.isPersistent ? '数据库数据' : '演示数据'}</span><Pagination pageSizes={[5,10,20]} pageSize={pageSize} totalItems={filtered.length} onChange={({pageSize:nextSize})=>setPageSize(nextSize)} /></div>
   </TableContainer>;
@@ -370,7 +371,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
   const [created,setCreated] = useState([]);
   const [persistentConfig,setPersistentConfig] = useState(null);
   const [persistentError,setPersistentError] = useState('');
-  const [loadingRecords,setLoadingRecords] = useState(false);
+  const [loadingRecords,setLoadingRecords] = useState(false);\n  const [showArchived,setShowArchived] = useState(false);
   const persistentSupported = supportsPersistentRecords(path);
   const displayColumns = persistentConfig?.columns || config.columns || defaultColumns;
   const openRecord = async (row) => {
@@ -389,7 +390,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
       finally{setCustomFieldsLoading(false);}
     }
   };
-  const reloadPersistentRecords = async () => { const result = await listCrmRecords(path); setPersistentConfig(result); setPersistentError(''); };
+  const reloadPersistentRecords = async () => { const result = await listCrmRecords(path,{includeArchived:showArchived}); setPersistentConfig(result); setPersistentError(''); };
   const changeCustomField = (fieldId,value) => setCustomFields((prev)=>prev.map((field)=>field.id===fieldId?{...field,value,dirty:true}:field));
   const saveCustomFields = async () => {
     if(!selectedRecord?.id)return;
@@ -428,6 +429,17 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
   const confirmArchive = () => {
     if(window.confirm('确认归档此记录？归档后它将从默认列表中隐藏。')) void handleArchive();
   };
+  const handleRestore = async (recordId) => {
+    try {
+      await restoreCrmRecord(path,recordId);
+      const result = await listCrmRecords(path,{includeArchived:showArchived});
+      setPersistentConfig(result);
+      setPersistentError('');
+      setNotice('记录已恢复，并重新显示在 CRM 列表中。');
+    } catch (error) {
+      setNotice(error?.message || '恢复失败，请检查工作空间权限。');
+    }
+  };
   const saveRecordEdit = async () => {
     if(!selectedRecord?.id)return;
     setEditBusy(true);
@@ -461,18 +473,18 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
       return () => { active = false; };
     }
     setLoadingRecords(true);
-    listCrmRecords(path)
+    listCrmRecords(path,{includeArchived:showArchived})
       .then((result) => { if (active) { setPersistentConfig(result); setPersistentError(''); } })
       .catch((error) => { if (active) { setPersistentConfig(null); setPersistentError(error?.message || 'CRM 数据读取失败'); } })
       .finally(() => { if (active) setLoadingRecords(false); });
     return () => { active = false; };
-  }, [path, persistentSupported]);
+  }, [path, persistentSupported, showArchived]);
   const saveDraft = async () => {
     if(!draft.name.trim()){setNotice('请填写记录名称。');return;}
     if (persistentSupported && supabaseConfigured) {
       try {
         await createCrmRecord(path, draft.name);
-        const result = await listCrmRecords(path);
+        const result = await listCrmRecords(path,{includeArchived:showArchived});
         setPersistentConfig(result);
         setPersistentError('');
         setCreateOpen(false);
@@ -503,7 +515,7 @@ export default function BusinessModulePage({path,navigate,setNotice,notice}) {
     {config.settings&&<SettingsPanel type="workspace"/>}
     {path==='/settings/users'&&<SettingsPanel type="users"/>}
     {config.integrations&&<SettingsPanel type="integrations"/>}
-    {path!=='/data/import-export'&&config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames,canCreate:persistentConfig?.canCreate??config.canCreate??true,canArchive:persistentConfig?.canArchive??false,supportsCustomFields:persistentConfig?.supportsCustomFields??false}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
+    {path!=='/data/import-export'&&config.columns&&<><div className="bm-list-summary"><div><strong>{persistentConfig?.count ?? config.rows?.length ?? 0} 条记录</strong><span> · {persistentConfig ? '数据库视图' : '默认视图'}</span></div><div><Tag type={persistentConfig ? 'green' : 'cool-gray'}>{persistentConfig ? '实时数据' : '演示数据'}</Tag><Button kind="ghost" renderIcon={Renew} size="sm" onClick={async()=>{if(persistentSupported&&supabaseConfigured){try{await reloadPersistentRecords();setNotice('CRM 数据已刷新。');}catch(error){setNotice(error?.message||'刷新失败。');}}else setNotice('当前列表已刷新演示数据。');}}>刷新</Button></div>{loadingRecords&&<InlineNotification kind="info" lowContrast title="正在读取 CRM 数据" subtitle="正在从工作空间数据库加载记录。"/>}{persistentError&&<InlineNotification kind="warning" lowContrast title="未能读取真实数据" subtitle={persistentError+'。下方展示的是演示数据，不会与数据库混淆。'}/>}</div><GenericTable config={{...config,path,columns:persistentConfig?.columns||config.columns,rows:persistentConfig?.rows||[...created.map(x=>[x.id,x.name,x.type,x.owner,x.status,new Date().toISOString().slice(0,10)]),...(config.rows||[])],isPersistent:Boolean(persistentConfig),recordIds:persistentConfig?.recordIds,recordNames:persistentConfig?.recordNames,recordArchivedFlags:persistentConfig?.recordArchivedFlags,includeArchived:showArchived,canCreate:persistentConfig?.canCreate??config.canCreate??true,canArchive:persistentConfig?.canArchive??false,supportsCustomFields:persistentConfig?.supportsCustomFields??false}} onConvert={handleConvert} onQualify={(id)=>handleLeadStatus(id,'qualified')} onDisqualify={(id)=>handleLeadStatus(id,'disqualified')} onRestore={handleRestore} onToggleArchived={setShowArchived} onOpenRecord={openRecord} onCreate={()=>setCreateOpen(true)}/></>}
     <div className="bm-page-foot"><span><DataBase size={14}/> Astrion 元数据驱动业务界面</span><span>核心 CRM 数据与获客服务已提供 Supabase 接入；其他模块按页面状态标记演示或待接入</span></div>
     <Modal open={createOpen} modalHeading="新建业务记录" primaryButtonText="保存草稿" secondaryButtonText="取消" onRequestClose={()=>setCreateOpen(false)} onRequestSubmit={saveDraft} size="md">
       <div className="bm-create-form"><TextInput id="bm-record-name" labelText="记录名称" value={draft.name} onChange={(e)=>setDraft((prev)=>({...prev,name:e.target.value}))} placeholder="输入名称"/>{(!persistentSupported||!supabaseConfigured)&&<><Select id="bm-record-type" labelText="记录类型" value={draft.type} onChange={(e)=>setDraft((prev)=>({...prev,type:e.target.value}))}><SelectItem value="standard" text="标准记录"/><SelectItem value="strategic" text="战略客户"/><SelectItem value="qualified" text="已资格审核"/><SelectItem value="partner" text="合作伙伴"/></Select><Select id="bm-record-owner" labelText="负责人" value={draft.owner} onChange={(e)=>setDraft((prev)=>({...prev,owner:e.target.value}))}><SelectItem value="team-a" text="销售团队 A"/><SelectItem value="team-b" text="销售团队 B"/><SelectItem value="marketing" text="营销运营"/><SelectItem value="system" text="系统管理员"/></Select><Select id="bm-record-status" labelText="状态" value={draft.status} onChange={(e)=>setDraft((prev)=>({...prev,status:e.target.value}))}><SelectItem value="new" text="新建"/><SelectItem value="review" text="待审核"/><SelectItem value="active" text="有效"/><SelectItem value="paused" text="暂停"/></Select><InlineNotification kind="info" lowContrast title="演示模式" subtitle="此操作仅更新当前页面状态，不会写入数据库。"/></>}{persistentSupported&&supabaseConfigured&&<InlineNotification kind="info" lowContrast title="数据库保存" subtitle="系统将生成业务编号并保存名称与必要默认字段；其他字段编辑将在后续表单中开放。"/>}</div>
