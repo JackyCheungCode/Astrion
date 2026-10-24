@@ -241,21 +241,21 @@ const fieldTypeLabels = {
   user_reference:'用户关联', record_reference:'对象关联', formula:'公式', auto_number:'自动编号', json:'JSON',
 };
 const fieldTypeToDatabase = {
-  text:'text', longtext:'long_text', number:'number', currency:'currency', date:'date',
-  boolean:'boolean', select:'single_select', multi:'multi_select', user:'user_reference',
+  text:'text', longtext:'long_text', number:'number', decimal:'decimal', currency:'currency', date:'date',
+  boolean:'boolean', datetime:'datetime', email:'email', phone:'phone', url:'url', json:'json', select:'single_select', multi:'multi_select', user:'user_reference',
   relation:'record_reference', formula:'formula', auto:'auto_number',
 };
 
 export async function listFieldDefinitions(objectKey) {
   const { workspaceId } = await getWorkspaceContext();
   const { data,error } = await supabase.from('crm_custom_field_definitions')
-    .select('id,field_key,label,field_type,is_required,is_unique,is_readonly,options,display_order')
+    .select('id,field_key,label,field_type,is_required,is_unique,is_readonly,is_searchable,is_filterable,default_value,options,validation_rules,display_order')
     .eq('workspace_id',workspaceId).eq('object_key',objectKey).eq('is_active',true)
     .order('display_order',{ascending:true}).limit(300);
   if (error) throw error;
   return (data || []).map((field)=>({
     id:field.id,name:field.field_key,label:field.label,type:fieldTypeLabels[field.field_type]||field.field_type,
-    required:field.is_required,unique:field.is_unique,isSystem:false,
+    required:field.is_required,unique:field.is_unique,isSystem:false,readonly:field.is_readonly,searchable:field.is_searchable,filterable:field.is_filterable,defaultValue:field.default_value??'',options:Array.isArray(field.options)?field.options:[],validationRules:field.validation_rules||{},
   }));
 }
 
@@ -266,7 +266,8 @@ export async function createFieldDefinition(objectKey,field) {
   const { data,error } = await supabase.from('crm_custom_field_definitions').insert({
     workspace_id:workspaceId,object_key:objectKey,field_key:field.name,label:field.label,
     field_type:dbType,is_required:Boolean(field.required),is_unique:Boolean(field.unique),
-    options:field.options||[],created_by:userId,
+    is_readonly:Boolean(field.readonly),is_searchable:field.searchable!==false,is_filterable:field.filterable!==false,
+    default_value:field.defaultValue?field.defaultValue:null,options:field.options||[],validation_rules:field.validationRules||{},created_by:userId,
   }).select('id').single();
   if (error) throw error;
   return data;
