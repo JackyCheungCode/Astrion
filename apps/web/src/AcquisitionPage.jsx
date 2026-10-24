@@ -6,7 +6,7 @@ import {
 } from '@carbon/icons-react';
 import {
   Button, Select, SelectItem, Tile, Tag, ProgressBar, Tabs, TabList, Tab, TabPanels,
-  TabPanel, TextInput, InlineNotification, Checkbox
+  TabPanel, TextInput, TextArea, InlineNotification, Checkbox
 } from '@carbon/react';
 import './acquisition-page.scss';
 
@@ -39,6 +39,10 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   useEffect(()=>{setActiveTab(path.endsWith('/targets')?'targets':path.endsWith('/discovery')?'discovery':'tasks');},[path]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [taskName, setTaskName] = useState('欧洲中型 SaaS 企业');
+  const [companyOffering, setCompanyOffering] = useState('');
+  const [valueProposition, setValueProposition] = useState('');
+  const [idealCustomerNotes, setIdealCustomerNotes] = useState('');
+  const [excludedTargets, setExcludedTargets] = useState('');
   const [audience, setAudience] = useState('b2b');
   const [region, setRegion] = useState('eu');
   const [industry, setIndustry] = useState('saas');
@@ -80,9 +84,27 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
       setSearchError('当前仍是演示模式。请配置 Supabase 环境变量、部署 acquisition-research Edge Function，并在服务端配置搜索 API 密钥。');
       return;
     }
-    const query = searchQuery.trim() || (audience === 'b2c'
-      ? `${industry} consumer trends in ${region} market; ${intent} intent`
-      : `${industry} companies in ${region}; company size ${companySize}; ${intent} business signal`);
+    const labelFor = (key, value) => selectOptions[key]?.find((option) => option.value === value)?.label || value;
+    const regionLabel = labelFor('region', region);
+    const industryLabel = labelFor('industry', industry);
+    const audienceLabel = labelFor('audience', audience);
+    const intentLabel = labelFor('intent', intent);
+    const sizeLabel = labelFor('companySize', companySize);
+    const profileContext = [
+      companyOffering.trim() && `Our offering: ${companyOffering.trim()}`,
+      valueProposition.trim() && `Value proposition: ${valueProposition.trim()}`,
+      idealCustomerNotes.trim() && `Ideal customer context: ${idealCustomerNotes.trim()}`,
+      excludedTargets.trim() && `Exclude: ${excludedTargets.trim()}`,
+    ].filter(Boolean).join('; ');
+    const generatedQuery = [
+      audience === 'b2c'
+        ? `${industryLabel} consumer trends in ${regionLabel} market; ${intentLabel}`
+        : audience === 'both'
+          ? `${industryLabel} companies and consumer demand in ${regionLabel}; ${intentLabel}`
+          : `${industryLabel} companies in ${regionLabel}; company size ${sizeLabel}; ${intentLabel} business signal`,
+      profileContext,
+    ].filter(Boolean).join('; ');
+    const query = searchQuery.trim() || generatedQuery;
     setSearching(true);
     setSearchError('');
     setSearchResults([]);
@@ -147,6 +169,16 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
           {showBuilder ? <section className="acq-panel acq-builder">
             <div className="acq-panel-heading"><div><h2>创建获客任务</h2><p>先定义目标客户，再配置搜索来源与研究规则。</p></div><Tag type="blue">步骤 1 / 2</Tag></div>
             <div className="acq-form-section">
+              <h3><span>00</span> 企业知识档案</h3>
+              <p>先说明企业提供什么、客户为什么选择你，再进行搜索；这些信息用于构建搜索上下文，不会自动公开或写入 CRM。</p>
+              <div className="acq-form-grid">
+                <div className="acq-field"><TextArea id="acq-company-offering" labelText="产品 / 服务" value={companyOffering} onChange={(event) => setCompanyOffering(event.target.value)} placeholder="例如：为中型企业提供库存预测与供应链优化软件" rows={2}/></div>
+                <div className="acq-field"><TextArea id="acq-value-proposition" labelText="核心价值与差异化" value={valueProposition} onChange={(event) => setValueProposition(event.target.value)} placeholder="例如：减少缺货、降低库存成本，支持多仓协同" rows={2}/></div>
+                <div className="acq-field"><TextArea id="acq-ideal-customer" labelText="理想客户补充说明" value={idealCustomerNotes} onChange={(event) => setIdealCustomerNotes(event.target.value)} placeholder="例如：有多仓库存、正在拓展欧洲市场的零售企业" rows={2}/></div>
+                <div className="acq-field"><TextArea id="acq-excluded-targets" labelText="排除条件（可选）" value={excludedTargets} onChange={(event) => setExcludedTargets(event.target.value)} placeholder="例如：排除微型企业、纯咨询公司和竞争对手" rows={2}/></div>
+              </div>
+            </div>
+            <div className="acq-form-section">
               <h3><span>01</span> 目标客户</h3>
               <div className="acq-form-grid">
                 <div className="acq-field"><TextInput id="acq-task-name" labelText="任务名称" value={taskName} onChange={(event) => setTaskName(event.target.value)} placeholder="例如：欧洲中型 SaaS 企业" /></div>
@@ -190,7 +222,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
           </section>
         </TabPanel>
         <TabPanel>
-          <section className="acq-panel"><div className="acq-panel-heading"><div><h2>线索发现</h2><p>按地区、行业和业务信号发现候选企业；研究结果需经过证据审核。</p></div><Button renderIcon={Search} onClick={handleDiscovery} disabled={searching}>{searching?'正在搜索…':'开始发现'}</Button></div>
+          <section className="acq-panel"><div className="acq-panel-heading"><div><h2>线索发现</h2><p>结合企业知识档案、目标画像与公开网页证据发现候选企业；研究结果需经过证据审核。</p></div><Button renderIcon={Search} onClick={handleDiscovery} disabled={searching}>{searching?'正在搜索…':'开始发现'}</Button></div>
             <div className="acq-discovery-grid">
               <Tile className="acq-discovery-card"><div className="acq-discovery-number">01</div><h3>搜索发现</h3><p>Serper 搜索公开网页与企业站点，获取候选公司及可追溯 URL。</p><Tag type={supabaseConfigured?'blue':'cool-gray'}>{supabaseConfigured?'Edge Function · 需配置密钥':'需配置 Supabase'}</Tag></Tile>
               <Tile className="acq-discovery-card"><div className="acq-discovery-number">02</div><h3>深度研究</h3><p>Tavily 补充企业产品、市场、增长和业务匹配等公开证据。</p><Tag type={supabaseConfigured?'blue':'cool-gray'}>{supabaseConfigured?'Tavily 服务端适配器':'需配置 Supabase'}</Tag></Tile>
