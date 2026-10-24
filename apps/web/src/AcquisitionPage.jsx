@@ -54,7 +54,8 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [score, setScore] = useState(true);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState(supabaseConfigured ? [] : initialTasks);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const [searchQuery,setSearchQuery] = useState('');
   const [searchResults,setSearchResults] = useState([]);
   const [providerStatuses,setProviderStatuses] = useState([]);
@@ -63,20 +64,113 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
   const [searching,setSearching] = useState(false);
   const [searchError,setSearchError] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadTasks = async () => {
+      if (!supabaseConfigured || !supabase) return;
+      const workspaceId = getSelectedWorkspaceId();
+      if (!workspaceId) {
+        setTasks([]);
+        setNotice('请先选择 Workspace，再查看或创建获客任务。');
+        return;
+      }
+      setLoadingTasks(true);
+      const { data, error } = await supabase
+        .from('ai_acquisition_tasks')
+        .select('id,task_number,name,status,audience,region,industry,provider_selection,target_volume,created_at,updated_at')
+        .eq('workspace_id', workspaceId)
+        .order('updated_at', { ascending: false })
+        .limit(100);
+      if (cancelled) return;
+      if (error) {
+        setTasks([]);
+        setNotice(`获客任务加载失败：${error.message}`);
+      } else {
+        const statusLabels = { draft: '草稿', ready: '待启动', running: '运行中', completed: '已完成', failed: '失败', archived: '已归档' };
+        const audienceLabels = { b2b: 'B2B 企业客户', b2c: 'B2C 消费者', both: 'B2B + B2C' };
+        const providerLabels = { serper: 'Serper', tavily: 'Tavily' };
+        setTasks((data || []).map((task) => ({
+          id: task.task_number ? `ACQ-${String(task.task_number).padStart(3, '0')}` : task.id,
+          recordId: task.id,
+          name: task.name,
+          audience: audienceLabels[task.audience] || task.audience,
+          region: selectOptions.region.find((option) => option.value === task.region)?.label || task.region,
+          source: (task.provider_selection || []).map((provider) => providerLabels[provider] || provider).join(' + '),
+          status: statusLabels[task.status] || task.status,
+          leads: '—',
+          updated: task.updated_at ? new Date(task.updated_at).toLocaleString() : '—',
+        })));
+      }
+      setLoadingTasks(false);
+    };
+    loadTasks();
+    return () => { cancelled = true; };
+  }, [setNotice]);
+
   const filteredTasks = useMemo(() => tasks.filter((task) => filter === 'all' || task.status === filter), [tasks, filter]);
 
-  const createTask = () => {
+  const createTask = async () => {
     if (!taskName.trim()) {
       setNotice('请为获客任务选择或填写一个名称。');
       return;
     }
-    const regionLabel = selectOptions.region.find((x) => x.value === region)?.label || region;
-    const audienceLabel = selectOptions.audience.find((x) => x.value === audience)?.label || audience;
-    const sourceLabel = source === 'both' ? 'Serper + Tavily' : source === 'serper' ? 'Serper' : 'Tavily';
-    setTasks((prev) => [{ id: `ACQ-${String(25 + prev.length).padStart(3, '0')}`, name: taskName, audience: audienceLabel, region: regionLabel, source: sourceLabel, status: '草稿', leads: '—', updated: '刚刚创建' }, ...prev]);
+    if (!supabaseConfigured || !supabase) {
+      setTasks((prev) => [{ id: `LOCAL-${Date.now()}`, name: taskName.trim(), audience: selectOptions.audience.find((x) => x.value === audience)?.label || audience, region: selectOptions.region.find((x) => x.value === region)?.label || region, source: source === 'both' ? 'Serper + Tavily' : source === 'serper' ? 'Serper' : 'Tavily', status: '草稿', leads: '—', updated: '本地演示' }, ...prev]);
+      setShowBuilder(false);
+      setActiveTab('tasks');
+      setNotice('当前为演示模式：任务仅保存在当前页面状态中，配置 Supabase 后才能持久化。');
+      return;
+    }
+    const workspaceId = getSelectedWorkspaceId();
+    if (!workspaceId) {
+      setNotice('请先选择 Workspace，再保存获客任务。');
+      return;
+    }
+    const { data: { user } = {}, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setNotice('登录状态已失效，请重新登录后再保存任务。');
+      return;
+    }
+    const providerSelection = source === 'both' ? (research ? ['serper', 'tavily'] : ['serper']) : [source];
+    const { data, error } = await supabase.from('ai_acquisition_tasks').insert({
+      workspace_id: workspaceId,
+      name: taskName.trim(),
+      status: 'draft',
+      audience,
+      region,
+      industry,
+      company_size: audience === 'b2c' ? null : companySize,
+      intent_signal: intent,
+      provider_selection: providerSelection,
+      target_volume: Math.min(10, Math.max(1, Number(volume) || 10)),
+      research_enabled: research,
+      evidence_scoring_enabled: score,
+      verified_sources_only: verifiedOnly,
+      company_offering: companyOffering.trim(),
+      value_proposition: valueProposition.trim(),
+      ideal_customer_notes: idealCustomerNotes.trim(),
+      excluded_targets: excludedTargets.trim(),
+      created_by: user.id,
+      updated_by: user.id,
+    }).select('id,task_number,name,status,audience,region,industry,provider_selection,target_volume,created_at,updated_at').single();
+    if (error) {
+      setNotice(`保存失败：${error.message}。请确认已应用 ai_acquisition_tasks 数据库迁移。`);
+      return;
+    }
+    setTasks((prev) => [{
+      id: data.task_number ? `ACQ-${String(data.task_number).padStart(3, '0')}` : data.id,
+      recordId: data.id,
+      name: data.name,
+      audience: selectOptions.audience.find((x) => x.value === data.audience)?.label || data.audience,
+      region: selectOptions.region.find((x) => x.value === data.region)?.label || data.region,
+      source: providerSelection.map((provider) => provider === 'serper' ? 'Serper' : 'Tavily').join(' + '),
+      status: '草稿',
+      leads: '—',
+      updated: '刚刚创建',
+    }, ...prev]);
     setShowBuilder(false);
     setActiveTab('tasks');
-    setNotice('获客任务已保存为前端草稿。数据源与后端任务队列尚未连接，暂未发起真实搜索。');
+    setNotice('获客任务已保存至当前 Workspace。下一步可启动搜索发现流程。');
   };
 
   const handleDiscovery = async () => {
@@ -141,7 +235,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
     </div>
 
     <div className="acq-metrics">
-      <Tile className="acq-metric"><div className="acq-metric-top"><span>任务总数</span><SettingsAdjust size={18}/></div><strong>{tasks.length}</strong><small>包含本地演示任务</small></Tile>
+      <Tile className="acq-metric"><div className="acq-metric-top"><span>任务总数</span><SettingsAdjust size={18}/></div><strong>{loadingTasks ? '…' : tasks.length}</strong><small>{supabaseConfigured ? '当前 Workspace 的任务' : '本地演示数据'}</small></Tile>
       <Tile className="acq-metric"><div className="acq-metric-top"><span>待审核线索</span><UserMultiple size={18}/></div><strong>—</strong><small>连接后端后显示</small></Tile>
       <Tile className="acq-metric"><div className="acq-metric-top"><span>高意向线索</span><ChartLine size={18}/></div><strong>—</strong><small>需要真实分析结果</small></Tile>
       <Tile className="acq-metric"><div className="acq-metric-top"><span>数据源状态</span><Globe size={18}/></div><strong className="acq-metric-state">未连接</strong><small>Serper · Tavily · Works API（可选）</small></Tile>
@@ -206,7 +300,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
               {filteredTasks.map((task) => <tr key={task.id}><td><strong>{task.name}</strong><small>{task.id}</small></td><td>{task.audience}</td><td>{task.region}</td><td>{task.source}</td><td><Tag type={task.status === '草稿' ? 'cool-gray' : task.status === '待启动' ? 'blue' : 'teal'}>{task.status}</Tag></td><td>{task.leads}</td><td>{task.updated}</td></tr>)}
               {!filteredTasks.length && <tr><td colSpan="7" className="acq-empty">没有符合筛选条件的任务。</td></tr>}
             </tbody></table></div>
-            <div className="acq-table-footer"><span>当前展示 {filteredTasks.length} 个任务 · 任务列表为前端演示数据</span><Button kind="ghost" size="sm" renderIcon={Renew} onClick={() => setNotice('当前任务列表为本地演示数据；真实刷新将在 API 接入后启用。')}>刷新</Button></div>
+            <div className="acq-table-footer"><span>{loadingTasks ? '正在加载任务…' : `当前展示 ${filteredTasks.length} 个任务 · ${supabaseConfigured ? 'Workspace 数据' : '本地演示数据`}</span><Button kind="ghost" size="sm" renderIcon={Renew} onClick={() => setNotice('当前任务列表为本地演示数据；真实刷新将在 API 接入后启用。')}>刷新</Button></div>
           </section>}
         </TabPanel>
         <TabPanel>
