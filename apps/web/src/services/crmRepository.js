@@ -90,9 +90,9 @@ entityMap['/acquisition/scoring'] = {
 };
 entityMap['/acquisition/research'] = {
   ...entityMap['/crm/leads'],
-  select:['lead_number','company_name','website','enrichment_status','source_detail','created_at'],
-  labels:['线索编号','候选公司','企业网站','研究状态','来源 URL','发现时间'],
-  map:(record)=>[record.lead_number,record.company_name,record.website||'—',record.enrichment_status,record.source_detail||'—',record.created_at ? new Date(record.created_at).toLocaleDateString() : '—'],
+  select:['lead_number','company_name','website','enrichment_status','source_detail','status'],
+  labels:['线索编号','候选公司','企业网站','研究状态','来源 URL','审核状态'],
+  map:(record)=>[record.lead_number,record.company_name,record.website||'—',record.enrichment_status,record.source_detail||'—',record.status],
 };
 
 const displayValue = (key,value) => {
