@@ -1,6 +1,8 @@
 -- Tenant isolation and append-only audit access for the initial CRM schema.
 begin;
 
+create schema if not exists private;
+
 alter table public.workspaces enable row level security;
 alter table public.workspace_memberships enable row level security;
 alter table public.crm_accounts enable row level security;
