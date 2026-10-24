@@ -19,7 +19,7 @@ const entityMap = {
   '/crm/contacts': {
     table: 'crm_contacts', archived: true, prefix: 'CON',
     select: ['contact_number','first_name','last_name','account_id','job_title','email','country_code','consent_status'],
-    labels: ['联系人编号','名字','姓氏','所属客户 ID','职位','业务邮箱','国家/地区','同意状态'],
+    labels: ['联系人编号','联系人姓名','所属客户 ID','职位','业务邮箱','国家/地区','同意状态'],
     map: (record) => [record.contact_number, [record.first_name,record.last_name].filter(Boolean).join(' '), record.account_id, record.job_title, record.email, record.country_code, record.consent_status],
     create: (name, number) => ({ contact_number:number, first_name:'New', last_name:name, consent_status:'unknown', source:'manual' }),
     hasAuditColumns: true, assignOwner: true,
