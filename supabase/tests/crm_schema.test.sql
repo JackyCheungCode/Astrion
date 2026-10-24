@@ -1,6 +1,6 @@
 -- Run with Supabase CLI: supabase test db
 begin;
-select plan(37);
+select plan(46);
 
 select has_table('public','workspaces');
 select has_table('public','workspace_memberships');
@@ -53,6 +53,17 @@ select ok(
    where n.nspname='public' and c.relname='crm_sales_orders'),
   'Sales orders enforce row-level security'
 );
+
+
+select has_table('public','crm_number_counters');
+select has_column('public','crm_quotes','converted_order_id');
+select has_function('public','next_crm_number',ARRAY['uuid','text']);
+select has_function('public','convert_lead_to_account',ARRAY['uuid','text','text','boolean','text']);
+select has_function('public','convert_accepted_quote_to_order',ARRAY['uuid','text']);
+select has_trigger('public','crm_accounts','crm_accounts_audit_event');
+select has_trigger('public','crm_quotes','crm_quotes_audit_event');
+select has_policy('public','crm_custom_field_definitions','crm_custom_field_definitions_admin_insert');
+select has_policy('public','audit_events','audit_admin_select');
 
 select * from finish();
 rollback;
