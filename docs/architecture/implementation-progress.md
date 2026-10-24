@@ -219,3 +219,11 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Add an enterprise knowledge-profile section to the acquisition task builder (product/service offering, value proposition, ideal-customer context, and exclusions) before discovery, so search criteria are grounded in the user's business context.
 - [x] Include the knowledge-profile context in the server-side discovery query even when the user provides optional custom search terms; map region, industry, audience, company-size, and intent selections to readable labels instead of sending internal option codes.
 - [ ] Validate the updated Carbon TextArea form and discovery flow in a fresh Vite build and authenticated test workspace. A local build could not be run in this environment because GitHub could not be resolved from the execution container; no current CI run or check result has been confirmed.
+
+
+## AI acquisition task persistence — 2026-10-24
+
+- Added migration `20261024000230_ai_acquisition_tasks.sql` for workspace-scoped acquisition task drafts, including ICP fields, provider selection, result limits, research/scoring toggles, audit actor fields, updated-at trigger, indexes, and RLS policies.
+- Updated the Carbon acquisition UI to load persisted tasks for the selected workspace and save new drafts to `ai_acquisition_tasks`; demo data remains only when Supabase is not configured.
+- Aligned task status filters with persisted task lifecycle values.
+- Validation pending: latest branch workflow status was not returned by the GitHub status endpoint; database migration execution, frontend build, Edge Function type-check, RLS tests, and end-to-end task save/load have not been confirmed. Apply the migration to a non-production Supabase environment and run tests before enabling this workflow for production users.
