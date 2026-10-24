@@ -22,3 +22,6 @@ site_url = "http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173"]
 enable_signup = false
 jwt_expiry = 3600
+
+[functions.acquisition-research]
+verify_jwt = true
