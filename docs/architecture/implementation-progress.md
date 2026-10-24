@@ -79,7 +79,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add row-level security policies for workspace membership, CRM record access, role-gated destructive operations, and append-only audit events.
 - [ ] Validate migrations against a real disposable Supabase project and run database security advisors (not yet run).
 - [x] Add Supabase local configuration and 55 schema/RLS/transaction/usage smoke assertions.
-- [ ] Re-run the database suite after migration 00200 adds acquisition usage metering.
+- [x] Re-run the database suite after migration 00200; all 55 assertions passed in GitHub Actions.
 - [ ] Add representative tenant seed data and deeper role-boundary tests.
 - [ ] Implement server-backed repository/API layer and replace frontend-only demo state with persisted CRUD.
 - [x] Add composite workspace-safe foreign keys across core CRM relationships.
@@ -115,7 +115,7 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [x] Add concurrency-safe workspace-scoped document numbering for ACC, CON, LEA, OPP, QUO, and SO prefixes.
 - [x] Restrict custom-field definition mutations to owner/admin/sales-manager roles and restrict audit-log reads to owner/admin/sales-manager/analyst roles.
 - [x] Apply migrations 00140–00190 to a disposable local Supabase project in CI.
-- [ ] Verify migration 00200 and the expanded 55-assertion suite in CI. A production Supabase project has not been provisioned or migrated.
+- [x] Verify migration 00200 and the expanded 55-assertion suite in CI. A production Supabase project has not been provisioned or migrated.
 
 - [x] Add role-aware write policies so analyst/read-only roles cannot mutate core business data.
 - [x] Add same-workspace relationship guards for core CRM links and polymorphic custom-field values.
