@@ -22,11 +22,13 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 ## Phase 2 — foundation
 - [ ] Align package manager and workspace tooling with the existing stack.
 - [ ] Establish lint, typecheck, test, and CI checks.
-- [ ] Establish Carbon theme/tokens and shared app shell.
+- [x] Establish Carbon-based shared app shell and route-driven modular workspace prototype.
 - [ ] Establish auth, permissions, observability, and configuration validation.
 
 ## Phase 3 — CRM and AI prospecting
-- [ ] Companies, contacts, leads, deduplication, and conversion history.
+- [x] Frontend prototypes for companies/accounts, contacts, leads, opportunity board/list, quotes, orders, fulfillment, payments, analytics, and settings.
+- [x] Add shared list/table, local draft creation, configurable field catalog prototype, workflow builder, analytics panels, and AI assistant shell.
+- [ ] Connect companies, contacts, leads, deduplication, and conversion history to persistent services.
 - [ ] AI Gateway, provider adapters, budgets, usage logging, and evaluations.
 - [ ] Prospect research, evidence provenance, scoring, review queue, and outreach approvals.
 
@@ -37,7 +39,8 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - [ ] Receivables, payments, allocations, refunds, and reconciliation.
 
 ## Phase 5 — settings and integrations
-- [ ] Custom field definitions, options, values, validation, and permissions.
+- [x] Frontend prototype for custom field definitions, field types, required/unique flags, and object selector.
+- [ ] Persist custom field definitions, options, values, validation, and permissions.
 - [ ] AI provider/model settings and secure credential handling.
 - [ ] API keys, scopes, revocation, rate limits, and webhooks.
 - [ ] Automation, notifications, audit, imports/exports, and reporting.
@@ -54,3 +57,11 @@ This checklist tracks the architecture skeleton and subsequent implementation. A
 - Normalized development standards: development rules documented; runtime implementation remains unverified.
 - Domain model and authorization draft: logical contracts only; no physical schema or permissions have been applied.
 - No dependency installation, database migration, secret creation, or deployment is included in these phases.
+
+
+## Frontend implementation note — 2026-10-24
+
+- Expanded the Carbon-based navigation into AI acquisition, CRM, sales, orders/fulfillment, service, analytics, AI automation, data governance, and system configuration.
+- Added a shared business module page for dashboards, tables, search/filter, local draft creation, sales pipeline board, analytics, custom fields, workflow steps, AI assistant, user/role previews, and integration settings.
+- All records and metrics in the prototype are explicitly demo data. CRUD changes remain local to the current browser view; no database writes, external searches, authentication, or provider API calls are performed.
+- Build verification remains pending because the current execution environment cannot resolve GitHub for a local clone and dependency installation.
