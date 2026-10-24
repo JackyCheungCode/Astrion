@@ -145,7 +145,7 @@ This section supersedes earlier high-level prototype-only summaries where later 
 | Workstream | Status | Evidence / limitation |
 |---|---|---|
 | Carbon / IBM-style frontend shell and navigation | Implemented | Existing React + Carbon app shell and route-driven modules; visual/accessibility review remains open. |
-| Workspace authentication and tenant scope | Implemented, configuration-dependent | Supabase Auth gate and `workspace_memberships` context are in place. A user with multiple workspaces is blocked until a workspace switcher exists. |
+| Workspace authentication and tenant scope | Implemented, configuration-dependent | Supabase Auth gate and `workspace_memberships` context are in place. A user with multiple workspaces is blocked until workspace-switcher runtime verification is complete. |
 | CRM persistence | Implemented for core paths | Repository adapter supports account/contact/lead/opportunity/quote/order reads and creation, primary-field edits on supported objects, and soft archive on core CRM records. Full multi-field edit/delete/restore and cursor pagination remain open. |
 | CRM business transactions | Implemented baseline | Workspace-scoped document numbering, qualified lead conversion, and accepted-quote-to-order transaction functions exist; business-rule and edge-case tests still need expansion. |
 | Custom fields | Implemented baseline | Field definitions and typed values support options, defaults, validation, uniqueness, read-only metadata, and audit capture; required-field enforcement and field-level access need further review. |
