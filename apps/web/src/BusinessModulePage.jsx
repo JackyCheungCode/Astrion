@@ -123,7 +123,7 @@ function FieldConfiguration() {
   const [unique,setUnique] = useState(false);
   const [fields,setFields] = useState(fieldsByObject.account);
   const typeLabels = {text:'文本',longtext:'长文本',number:'数字',currency:'金额',date:'日期',boolean:'布尔值',select:'单选下拉框',multi:'多选下拉框',user:'用户关联',relation:'对象关联',formula:'公式',auto:'自动编号'};
-  const generatedFieldName = label.trim().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'custom_field_' + (fields.length + 1);
+  const generatedFieldName = label.trim().normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || 'custom_field_' + (fields.length + 1);
   const addField = () => {
     if (!label.trim()) return;
     const fieldKey = generatedFieldName;
