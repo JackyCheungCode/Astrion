@@ -145,7 +145,7 @@ This section supersedes earlier high-level prototype-only summaries where later 
 | Workstream | Status | Evidence / limitation |
 |---|---|---|
 | Carbon / IBM-style frontend shell and navigation | Implemented | Existing React + Carbon app shell and route-driven modules; visual/accessibility review remains open. |
-| Workspace authentication and tenant scope | Implemented, configuration-dependent | Supabase Auth gate and `workspace_memberships` context are in place. A user with multiple workspaces is blocked until workspace-switcher runtime verification is complete. |
+| Workspace authentication and tenant scope | Implemented, configuration-dependent | Supabase Auth gate and `workspace_memberships` context are in place. A Carbon workspace selector is implemented; runtime verification of switching and cross-tenant isolation remains pending. |
 | CRM persistence | Implemented for core paths | Repository adapter supports account/contact/lead/opportunity/quote/order reads and creation, primary-field edits on supported objects, and soft archive on core CRM records. Full multi-field edit/delete/restore and cursor pagination remain open. |
 | CRM business transactions | Implemented baseline | Workspace-scoped document numbering, qualified lead conversion, and accepted-quote-to-order transaction functions exist; business-rule and edge-case tests still need expansion. |
 | Custom fields | Implemented baseline | Field definitions and typed values support options, defaults, validation, uniqueness, read-only metadata, and audit capture; required-field enforcement and field-level access need further review. |
@@ -180,3 +180,12 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Add an inline Carbon error notification for membership-loading / storage failures and responsive top-bar styling for the selector.
 - [ ] Build and runtime verification of the workspace selector remains pending in this environment. The available status endpoint returned no check records for the inspected commit; this is not evidence of a passing build.
 - [x] Pass the selected workspace ID from the AI acquisition UI to the Edge Function and validate it against the authenticated user's active memberships; users with multiple memberships no longer fail solely because they belong to more than one workspace when a valid workspace is selected.
+
+## Continued implementation — 2026-10-24
+
+- [x] Pass the selected workspace ID from the AI acquisition frontend to the `acquisition-research` Edge Function.
+- [x] Validate the requested workspace against the authenticated user's active memberships before reserving usage or searching; reject unauthorized workspace IDs and require an explicit selection for multi-workspace users.
+- [x] Update the CRM database setup guide and progress checklist to reflect the implemented workspace selector and its remaining verification requirements.
+- [x] Remove duplicate workspace selector style declarations while retaining the existing responsive Carbon top-bar styling.
+- [ ] Re-run Vite build, Deno type-check, database tests, and deployed two-workspace integration tests. GitHub status endpoints returned no check records for the inspected latest commit, and a Cloudflare preview for earlier code commits was still reported as in progress; this does not establish a passing build.
+- [ ] Configure and verify Serper/Tavily/Works secrets in a test Supabase project. Supabase's documented secret mechanism is server-side Edge Function environment variables; do not expose provider secrets in browser variables. (See https://supabase.com/docs/guides/functions/secrets)
