@@ -121,15 +121,15 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
                 <CarbonSelect id="acq-volume" label="目标线索数量" value={volume} options={selectOptions.volume} onChange={setVolume}/>
               </div>
               <div className="acq-checks">
-                <Checkbox id="acq-research" labelText="对候选企业进行网页深度研究（Tavily）" checked={research} onChange={(event, { checked }) => setResearch(checked)}/>
-                <Checkbox id="acq-score" labelText="启用 AI 线索评分与证据摘要" checked={score} onChange={(event, { checked }) => setScore(checked)}/>
-                <Checkbox id="acq-verified" labelText="仅展示具备可追溯来源的结果" checked={verifiedOnly} onChange={(event, { checked }) => setVerifiedOnly(checked)}/>
+                <Checkbox id="acq-research" labelText="对候选企业进行网页深度研究（Tavily）" checked={research} onChange={(checked) => setResearch(checked)}/>
+                <Checkbox id="acq-score" labelText="启用 AI 线索评分与证据摘要" checked={score} onChange={(checked) => setScore(checked)}/>
+                <Checkbox id="acq-verified" labelText="仅展示具备可追溯来源的结果" checked={verifiedOnly} onChange={(checked) => setVerifiedOnly(checked)}/>
               </div>
             </div>
             <InlineNotification kind="info" lowContrast title="数据与隐私说明" subtitle="仅规划采集公开、合法可用的信息；每条线索应保留来源链接、采集时间、证据与置信度。外联发送与消费者画像功能需在后续接入授权与合规校验。" hideCloseButton/>
             <div className="acq-builder-footer"><Button kind="secondary" onClick={() => setShowBuilder(false)}>取消</Button><Button renderIcon={ArrowRight} onClick={createTask}>保存为草稿</Button></div>
           </section> : <section className="acq-panel">
-            <div className="acq-panel-heading"><div><h2>获客任务</h2><p>配置目标、检查任务状态，并在审核后进入线索处理流程。</p></div><div className="acq-filter"><Filter size={16}/><Select id="acq-status-filter" labelText="任务状态" hideLabel value={filter} onChange={(event) => setFilter(event.target.value)}><SelectItem value="all" text="全部状态"/><SelectItem value="草稿" text="草稿"/><SelectItem value="待启动" text="待启动"/><SelectItem value="已完成配置" text="已完成配置"/></Select></Select></div></div>
+            <div className="acq-panel-heading"><div><h2>获客任务</h2><p>配置目标、检查任务状态，并在审核后进入线索处理流程。</p></div><div className="acq-filter"><Filter size={16}/><Select id="acq-status-filter" labelText="任务状态" hideLabel value={filter} onChange={(event) => setFilter(event.target.value)}><SelectItem value="all" text="全部状态"/><SelectItem value="草稿" text="草稿"/><SelectItem value="待启动" text="待启动"/><SelectItem value="已完成配置" text="已完成配置"/></Select></div></div>
             <div className="acq-table-wrap"><table className="acq-table"><thead><tr><th>任务</th><th>客户类型</th><th>地区</th><th>数据源</th><th>状态</th><th>线索数</th><th>最近更新</th></tr></thead><tbody>
               {filteredTasks.map((task) => <tr key={task.id}><td><strong>{task.name}</strong><small>{task.id}</small></td><td>{task.audience}</td><td>{task.region}</td><td>{task.source}</td><td><Tag type={task.status === '草稿' ? 'cool-gray' : task.status === '待启动' ? 'blue' : 'teal'}>{task.status}</Tag></td><td>{task.leads}</td><td>{task.updated}</td></tr>)}
               {!filteredTasks.length && <tr><td colSpan="7" className="acq-empty">没有符合筛选条件的任务。</td></tr>}
