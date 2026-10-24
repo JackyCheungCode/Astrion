@@ -216,18 +216,21 @@ async function nextCrmNumber(prefix,workspaceId) {
   return data;
 }
 
-export async function listCrmRecords(path) {
+export async function listCrmRecords(path, options = {}) {
+  const includeArchived = options.includeArchived === true;
   const config = entityMap[path];
   if (!config) return null;
   const { workspaceId } = await getWorkspaceContext();
   let query = supabase.from(config.table)
-    .select('id,workspace_id,'+[...config.select,...(config.editSelect||[]),...(config.embeds||[])].join(','))
+    .select('id,workspace_id,'+[...config.select,...(config.editSelect||[]),...(config.embeds||[]),...(config.archived?['archived_at']:[])].join(','))
     .eq('workspace_id',workspaceId);
-  if (config.archived) query = query.is('archived_at',null);
+  if (config.archived) {
+    query = includeArchived ? query.not('archived_at','is',null) : query.is('archived_at',null);
+  }
   const { data,error } = await query.order(config.orderBy||'updated_at',{ascending:false}).limit(200);
   if (error) throw error;
   const rows = (data || []).map((record) => config.map ? config.map(record) : config.select.map((key) => displayValue(key,record[key])));
-  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), canCreate:config.canCreate!==false&&Boolean(config.create), canArchive:Boolean(config.archived), supportsCustomFields:Boolean(config.objectKey), count:rows.length };
+  return { columns:config.labels, rows, recordIds:(data || []).map((record) => record.id), recordNames:(data || []).map((record) => config.editName ? config.editName(record) : null), recordArchivedFlags:(data || []).map((record) => Boolean(record.archived_at)), canCreate:config.canCreate!==false&&Boolean(config.create), canArchive:Boolean(config.archived), supportsCustomFields:Boolean(config.objectKey), count:rows.length };
 }
 
 export async function createCrmRecord(path,name) {
@@ -372,6 +375,18 @@ export async function archiveCrmRecord(path,recordId) {
   const {error}=await supabase.from(config.table).update(payload)
     .eq('id',recordId).eq('workspace_id',workspaceId);
   if(error) throw error;
+}
+
+export async function restoreCrmRecord(path,recordId) {
+  const config=entityMap[path];
+  if(!config?.archived) throw new Error('该业务对象不支持归档恢复。');
+  const {workspaceId,userId}=await getWorkspaceContext();
+  const payload={archived_at:null};
+  if(config.hasAuditColumns) payload.updated_by=userId;
+  const {data,error}=await supabase.from(config.table).update(payload)
+    .eq('id',recordId).eq('workspace_id',workspaceId).select('id').single();
+  if(error) throw error;
+  return data;
 }
 
 export async function setLeadStatus(leadId,status) {
