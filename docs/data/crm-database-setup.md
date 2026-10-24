@@ -29,13 +29,13 @@ The migration chain through 00200 and all 55 pgTAP schema/policy/transaction/usa
 
 ## Current frontend repository adapter
 
-`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. Acquisition requests are limited to 20 per user and 200 per workspace per rolling hour; these are initial guardrails, not a provider spend-budget system. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
+`apps/web/src/services/crmRepository.js` uses the signed-in Supabase session and the canonical `workspace_memberships` table. It currently supports list/create operations for accounts, contacts, leads, opportunities, quotes, and sales orders; primary-field edits for accounts, contacts, leads, opportunities, and quote notes; atomic lead conversion and accepted-quote-to-order calls; and persisted custom-field definitions. It intentionally stops if the user belongs to multiple workspaces because a workspace switcher is not yet implemented. Acquisition requests are limited to 20 per user and 200 per workspace per rolling hour; these are initial guardrails, not a provider spend-budget system. The `acquisition-research` Edge Function calls Serper and Tavily server-side and supports an optional Works endpoint adapter; credentials and the Works API contract still need project-specific configuration.
 
 If Supabase variables are absent, the UI remains in clearly labeled demo mode. If variables exist but authentication, workspace membership, or migrations are incomplete, the page reports the error and labels fallback rows as demo data.
 
 ## Remaining production work
 
-- Edit/delete flows, cursor pagination, relationship hydration, typed field-value persistence, field-level authorization, and safe dynamic validation.
+- Full multi-field edit forms, archive/delete flows, cursor pagination, relationship hydration, typed field-value persistence, field-level authorization, and safe dynamic validation.
 - Expand role-boundary tests with representative workspace/user fixtures and perform a security review before production.
 - Business-rule tests for lead conversion, quote acceptance/expiry, order creation, and audit capture.
 - Atomic pricing/tax calculations, quote versioning rules, approvals, and finance reconciliation.
