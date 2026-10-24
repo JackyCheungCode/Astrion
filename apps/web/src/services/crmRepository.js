@@ -173,7 +173,7 @@ export async function listFieldDefinitions(objectKey) {
   if (error) throw error;
   return (data || []).map((field)=>({
     id:field.id,name:field.field_key,label:field.label,type:fieldTypeLabels[field.field_type]||field.field_type,
-    required:field.is_required,unique:field.is_unique,isSystem:field.is_readonly,
+    required:field.is_required,unique:field.is_unique,isSystem:false,
   }));
 }
 
