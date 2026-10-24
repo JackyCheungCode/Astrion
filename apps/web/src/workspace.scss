@@ -89,3 +89,15 @@ button { font: inherit; }
 }
 @media (max-width: 420px) { .astrion-stat-grid { grid-template-columns: 1fr 1fr; gap: 8px; } .astrion-stat-card { min-height: 112px; padding: 14px; } .astrion-stat-card strong { font-size: 25px; } .astrion-page-heading .cds--btn { min-width: auto; padding-inline: 10px; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration: .01ms !important; } }
+
+.astrion-workspace-switcher { flex: 0 1 260px; min-width: 150px; max-width: 260px; margin: 0 8px; }
+.astrion-workspace-switcher .cds--dropdown__wrapper { min-width: 0; }
+.astrion-workspace-switcher .cds--label { margin-bottom: 2px; color: #c6c6c6; font-size: 10px; line-height: 1.2; }
+.astrion-workspace-switcher .cds--dropdown { min-height: 34px; background: #262626; border-bottom-color: #8d8d8d; color: #f4f4f4; }
+.astrion-workspace-switcher .cds--list-box__field, .astrion-workspace-switcher .cds--list-box__menu-icon { color: #f4f4f4; }
+.astrion-workspace-switcher .cds--list-box__menu { color: #161616; }
+.astrion-workspace-switcher .cds--list-box__field:focus { outline-color: #78a9ff; }
+@media (max-width: 767px) {
+  .astrion-workspace-switcher { flex-basis: 128px; min-width: 112px; max-width: 160px; margin: 0 2px; }
+  .astrion-workspace-switcher .cds--label { display: none; }
+}
