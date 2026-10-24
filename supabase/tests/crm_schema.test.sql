@@ -1,6 +1,6 @@
 -- Run with Supabase CLI: supabase test db
 begin;
-select plan(55);
+select plan(56);
 
 select has_table('public','workspaces','workspaces table exists');
 select has_table('public','workspace_memberships','workspace_memberships table exists');
@@ -77,6 +77,8 @@ select ok(exists(select 1 from pg_policies where schemaname='public' and tablena
 select has_table('public','ai_acquisition_usage','AI acquisition usage table exists');
 select has_function('public','reserve_acquisition_request',ARRAY['uuid','text[]','text'],'acquisition request reservation function exists');
 select has_function('public','complete_acquisition_request',ARRAY['uuid','uuid','text','integer','integer'],'acquisition request completion function exists');
+
+select has_column('public','crm_sales_orders','customer_reference','sales orders support customer reference editing');
 
 select * from finish();
 rollback;
