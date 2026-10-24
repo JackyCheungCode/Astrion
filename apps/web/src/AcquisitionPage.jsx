@@ -89,9 +89,9 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
     setProviderStatuses([]);
     setWorksResult(null);
     try {
-      const providers = source === 'both' ? ['serper','tavily'] : [source];
+      const providers = source === 'both' ? (research ? ['serper','tavily'] : ['serper']) : [source];
       const { data,error } = await supabase.functions.invoke('acquisition-research',{
-        body:{query,providers,maxResults:Math.min(10,Math.max(1,Number(volume)||10)),persistCandidates,workspaceId:getSelectedWorkspaceId()||null},
+        body:{query,providers,maxResults:Math.min(10,Math.max(1,Number(volume)||10)),persistCandidates,scoreEvidence:score,verifiedOnly,workspaceId:getSelectedWorkspaceId()||null},
       });
       if(error) throw error;
       setSearchResults(Array.isArray(data?.results)?data.results:[]);
@@ -125,12 +125,12 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
       <Tile className="acq-metric"><div className="acq-metric-top"><span>任务总数</span><SettingsAdjust size={18}/></div><strong>{tasks.length}</strong><small>包含本地演示任务</small></Tile>
       <Tile className="acq-metric"><div className="acq-metric-top"><span>待审核线索</span><UserMultiple size={18}/></div><strong>—</strong><small>连接后端后显示</small></Tile>
       <Tile className="acq-metric"><div className="acq-metric-top"><span>高意向线索</span><ChartLine size={18}/></div><strong>—</strong><small>需要真实分析结果</small></Tile>
-      <Tile className="acq-metric"><div className="acq-metric-top"><span>数据源状态</span><Globe size={18}/></div><strong className="acq-metric-state">未连接</strong><small>Serper · Tavily · Workers API</small></Tile>
+      <Tile className="acq-metric"><div className="acq-metric-top"><span>数据源状态</span><Globe size={18}/></div><strong className="acq-metric-state">未连接</strong><small>Serper · Tavily · Works API（可选）</small></Tile>
     </div>
 
     <div className="acq-provider-strip">
       <div className="acq-provider-icon"><Globe size={20}/></div>
-      <div className="acq-provider-copy"><strong>数据来源与 AI 分析</strong><span>Serper 负责搜索发现 · Tavily 负责网页研究 · Workers API 负责流程编排</span></div>
+      <div className="acq-provider-copy"><strong>数据来源与 AI 分析</strong><span>Serper 负责搜索发现 · Tavily 负责网页研究 · Works API 可选补全企业公开业务信息</span></div>
       <Tag type="cool-gray">前端阶段</Tag>
     </div>
 
@@ -165,7 +165,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
               </div>
               <div className="acq-checks">
                 <Checkbox id="acq-research" labelText="对候选企业进行网页深度研究（Tavily）" checked={research} onChange={(checked) => setResearch(checked)}/>
-                <Checkbox id="acq-score" labelText="启用 AI 线索评分与证据摘要" checked={score} onChange={(checked) => setScore(checked)}/>
+                <Checkbox id="acq-score" labelText="启用证据质量评分（规则评分，不代表购买意向）" checked={score} onChange={(checked) => setScore(checked)}/>
                 <Checkbox id="acq-verified" labelText="仅展示具备可追溯来源的结果" checked={verifiedOnly} onChange={(checked) => setVerifiedOnly(checked)}/>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
             </div>
             {searchError&&<InlineNotification kind="error" lowContrast title="线索发现未完成" subtitle={searchError}/>}
             {providerStatuses.length>0&&<div className="acq-provider-status">{providerStatuses.map((provider)=> <div className="acq-provider-status-item" key={provider.provider}><Tag type={provider.status==='ok'?'green':provider.status==='skipped'?'cool-gray':'red'}>{provider.provider}: {provider.status}{provider.count!==undefined?` · ${provider.count}`:''}</Tag>{provider.message&&<small>{provider.message}</small>}</div>)}</div>}
-            {providerStatuses.length>0&&searchResults.length===0&&<div className="acq-empty-results">当前没有可展示的搜索结果。请检查上方服务状态、密钥配置或调整搜索关键词。</div>}{searchResults.length>0&&<section className="acq-results-panel"><div className="acq-results-heading"><h3>搜索结果与证据</h3><span>{searchResults.length} 条结果</span></div>{searchResults.map((result,index)=><article className="acq-result-item" key={result.url||index}><div className="acq-result-meta"><Tag type="blue">{(result.providers||[result.provider]).join(' + ')}</Tag><span>{result.domain}</span></div><h4><a href={result.url} target="_blank" rel="noreferrer">{result.title}</a></h4><p>{result.snippet||'未提供摘要。'}</p><small>{result.url}</small></article>)}</section>}
+            {providerStatuses.length>0&&searchResults.length===0&&<div className="acq-empty-results">当前没有可展示的搜索结果。请检查上方服务状态、密钥配置或调整搜索关键词。</div>}{searchResults.length>0&&<section className="acq-results-panel"><div className="acq-results-heading"><h3>搜索结果与证据</h3><span>{searchResults.length} 条结果</span></div>{searchResults.map((result,index)=><article className="acq-result-item" key={result.url||index}><div className="acq-result-meta"><Tag type="blue">{(result.providers||[result.provider]).join(' + ')}</Tag><span>{result.domain}</span>{result.evidenceScore!==undefined&&<Tag type={result.evidenceScore>=70?'green':result.evidenceScore>=40?'blue':'cool-gray'}>证据完整度 {result.evidenceScore}/100</Tag>}</div><h4><a href={result.url} target="_blank" rel="noreferrer">{result.title}</a></h4><p>{result.snippet||'未提供摘要。'}</p><small>{result.url}</small></article>)}</section>}
             {worksResult?.status==='ok'&&<section className="acq-works-result"><div><h3>Works API 补全结果（待审核）</h3><p>返回内容仅供当前用户核验，不会自动写入联系人或触发外联。</p></div><pre>{JSON.stringify(worksResult.data,null,2)}</pre></section>}
             {worksResult?.status==='error'&&<InlineNotification kind="warning" lowContrast title="Works API 暂不可用" subtitle={worksResult.message||'请检查服务端 endpoint 与密钥配置。'}/>}
             <div className="acq-progress-panel"><div><h3>发现流程</h3><p>配置任务 → 搜索去重 → 深度研究 → AI 评分 → 人工审核 → CRM</p></div><ProgressBar label="前端界面完成度" value={100} max={100} helperText="仅表示界面骨架已完成，不代表 API 或数据源已连接。"/></div>
