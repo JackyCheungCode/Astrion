@@ -82,7 +82,7 @@ export default function LoginPage() {
                 id="remember-identifier"
                 labelText="记住账号"
                 checked={remember}
-                onChange={(_checked, event) => setRemember(event.target.checked)}
+                onChange={(checked) => setRemember(checked)}
               />
             </div>
           </form>
