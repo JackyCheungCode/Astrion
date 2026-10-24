@@ -187,7 +187,7 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Validate the requested workspace against the authenticated user's active memberships before reserving usage or searching; reject unauthorized workspace IDs and require an explicit selection for multi-workspace users.
 - [x] Update the CRM database setup guide and progress checklist to reflect the implemented workspace selector and its remaining verification requirements.
 - [x] Remove duplicate workspace selector style declarations while retaining the existing responsive Carbon top-bar styling.
-- [ ] Re-run Vite build, Deno type-check, database tests, and deployed two-workspace integration tests. GitHub status endpoints returned no check records for the inspected latest commit, and a Cloudflare preview for earlier code commits was still reported as in progress; this does not establish a passing build.
+- [x] Cloudflare Workers preview build succeeded for the latest code-bearing checkpoint, commit `8a274a0` (Vite production build and static asset deployment completed). Deno type-check/unit-test results, database tests, and deployed two-workspace integration tests remain unverified.
 - [ ] Configure and verify Serper/Tavily/Works secrets in a test Supabase project. Supabase's documented secret mechanism is server-side Edge Function environment variables; do not expose provider secrets in browser variables. (See https://supabase.com/docs/guides/functions/secrets)
 
 - [x] Connect the acquisition research-depth option to provider selection (Serper-only when deep research is disabled and both providers were selected).
@@ -198,17 +198,17 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Extract workspace-selection and evidence-quality scoring logic into shared Deno helpers with unit tests for single/multiple workspace resolution, unauthorized workspace IDs, and bounded evidence scores.
 - [x] Add the helper unit-test command to the web CI workflow alongside the Edge Function type-check.
 - [x] Align acquisition volume choices with the server-side ten-result-per-provider limit to avoid misleading 25–250 result selections.
-- [ ] Confirm the new Deno tests and Vite build pass in CI; status APIs currently return no check records for the latest branch commits.
+- [x] Verify the latest Vite build through Cloudflare Workers preview logs; GitHub status APIs returned no check records, so Deno and database CI results still need independent confirmation.
 
 - [x] Inspect Cloudflare Workers Build logs and identify the preview deployment failure: Wrangler reported that the configuration lacked the required `previews` block.
 - [x] Add root `wrangler.jsonc` with `previews`, Vite build command, static asset directory, and SPA fallback; update web deployment documentation.
-- [ ] Verify the next Cloudflare preview build after the Wrangler configuration change. The build result must be checked before declaring deployment fixed.
+- [x] Verify Cloudflare preview build success after the Wrangler configuration change; the latest checked build completed successfully and uploaded/served the SPA assets.
 
 - [x] Add workspace-scoped archive browsing and restore operations for CRM objects that support soft archive; expose the archive filter and restore action through Carbon controls.
 - [ ] Verify restore permissions and audit capture in database integration tests, and add an automated UI regression test for archive/restore.
 
 - [x] Implement actual client-side page slicing and controlled Carbon Pagination for CRM tables; reset to the first page when search or status filters change.
-- [ ] Verify archive browsing, restore, and pagination in the latest successful Vite build; an earlier build caught and fixed a syntax error in the archive-state declaration.
+- [x] Latest Vite build compiles the archive/restore and pagination UI without syntax errors. Manual authenticated behavior tests for archive/restore and pagination remain pending.
 
 - [x] Make acquisition CORS origin handling support a comma-separated exact allowlist so preview and production origins can be configured without wildcard access.
 - [ ] Verify the allowlist with the actual deployed Supabase Edge Function and configure `APP_ORIGINS` in its server-side secrets.
