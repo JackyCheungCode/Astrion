@@ -92,7 +92,7 @@ for each row execute function public.enforce_custom_field_value_rules();
 drop trigger if exists crm_custom_field_values_audit_event on public.crm_custom_field_values;
 create trigger crm_custom_field_values_audit_event
 after insert or update or delete on public.crm_custom_field_values
-for each row execute function public.capture_crm_audit_event();
+for each row execute function public.capture_audit_event();
 
 revoke all on function public.enforce_custom_field_value_rules() from public;
 
