@@ -12,6 +12,8 @@ The repository already has a canonical workspace-based schema. Use the existing 
 6. `20261024000150_crm_document_numbering.sql` — concurrency-safe workspace-scoped document numbers.
 7. `20261024000160_crm_audit_capture.sql` — audit triggers and restricted audit visibility.
 8. `20261024000170_crm_field_metadata_permissions.sql` — restrict custom field schema changes to authorized workspace roles.
+9. `20261024000180_workspace_role_write_permissions.sql` — prevent read-only/analyst roles from mutating business data and apply module-specific write roles.
+10. `20261024000190_workspace_relationship_guards.sql` — validate same-workspace core references and custom-field record scope.
 
 ## Apply and verify
 
