@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Astrion sign-in page design prototype.">
+  <title>Sign in · Astrion</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #0f62fe;
+      --blue-hover: #0353e9;
+      --ink: #161616;
+      --muted: #525252;
+      --line: #c6c6c6;
+      --surface: #ffffff;
+      --canvas: #f4f4f4;
+      --focus: #0f62fe;
+      --radius: 2px;
+      font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body { background: var(--canvas); color: var(--ink); }
+    button, input { font: inherit; }
+    button, a, input { -webkit-tap-highlight-color: transparent; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+    .page { min-height: 100vh; display: grid; grid-template-columns: minmax(360px, 0.92fr) minmax(500px, 1.08fr); }
+    .brand-panel {
+      position: relative; overflow: hidden; display: flex; flex-direction: column;
+      justify-content: space-between; min-height: 100vh; padding: 38px clamp(30px, 5vw, 76px) 28px;
+      background: #161616; color: #f4f4f4;
+    }
+    .brand-panel::before {
+      content: ""; position: absolute; width: 520px; height: 520px; border-radius: 50%;
+      right: -260px; top: 18%; border: 1px solid rgba(120,169,255,.25);
+      box-shadow: 0 0 0 48px rgba(120,169,255,.035), 0 0 0 96px rgba(120,169,255,.025), 0 0 0 144px rgba(120,169,255,.02);
+      pointer-events: none;
+    }
+    .brand-panel::after {
+      content: ""; position: absolute; width: 260px; height: 260px; left: -170px; bottom: 8%;
+      border-radius: 50%; background: rgba(15,98,254,.16); filter: blur(42px); pointer-events: none;
+    }
+    .brand, .hero, .brand-footer { position: relative; z-index: 1; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; color: #fff; width: fit-content; }
+    .brand-mark { width: 36px; height: 36px; display: grid; place-items: center; background: var(--blue); border-radius: 4px; }
+    .brand-mark svg { width: 24px; height: 24px; }
+    .brand-name { font-size: 21px; font-weight: 600; letter-spacing: -.6px; }
+    .brand-kicker { margin: 0 0 18px; color: #a6c8ff; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+    .hero { max-width: 520px; margin: auto 0; padding: 70px 0; }
+    .hero h1 { margin: 0; max-width: 500px; font-size: clamp(38px, 4.1vw, 58px); line-height: 1.08; font-weight: 400; letter-spacing: -2.1px; }
+    .hero h1 span { color: #78a9ff; }
+    .hero-copy { max-width: 390px; margin: 24px 0 0; color: #c6c6c6; font-size: 16px; line-height: 1.65; }
+    .insight { display: flex; align-items: center; gap: 14px; margin-top: 46px; padding-top: 24px; border-top: 1px solid #393939; max-width: 420px; }
+    .insight-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; background: #262626; border: 1px solid #393939; color: #78a9ff; }
+    .insight-icon svg { width: 20px; height: 20px; }
+    .insight strong { display: block; font-size: 13px; font-weight: 600; }
+    .insight span { display: block; margin-top: 5px; color: #a8a8a8; font-size: 12px; }
+    .brand-footer { display: flex; justify-content: space-between; gap: 18px; color: #8d8d8d; font-size: 11px; }
+    .form-panel { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 48px clamp(28px, 7vw, 104px); background: #fff; }
+    .mobile-brand { display: none; }
+    .form-wrap { width: 100%; max-width: 416px; }
+    .eyebrow { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase; }
+    h2 { margin: 12px 0 10px; font-size: 32px; line-height: 1.2; font-weight: 400; letter-spacing: -.8px; }
+    .intro { margin: 0 0 34px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .field { margin-bottom: 22px; }
+    .field label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+    .input-wrap { position: relative; }
+    input[type="email"], input[type="password"], input[type="text"] {
+      display: block; width: 100%; height: 48px; padding: 0 14px; border: 0; border-bottom: 1px solid #8d8d8d;
+      border-radius: 0; background: #f4f4f4; color: var(--ink); font-size: 15px; outline-offset: 1px;
+    }
+    input::placeholder { color: #6f6f6f; opacity: 1; }
+    input:hover { background: #e8e8e8; }
+    input:focus { outline: 2px solid var(--focus); outline-offset: -2px; border-bottom-color: transparent; }
+    .password-input { padding-right: 62px !important; }
+    .toggle-password { position: absolute; top: 0; right: 0; height: 48px; min-width: 58px; padding: 0 10px; border: 0; background: transparent; color: #393939; font-size: 12px; cursor: pointer; }
+    .toggle-password:hover { background: #e8e8e8; }
+    .form-options { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 2px 0 28px; font-size: 13px; }
+    .check { display: inline-flex; align-items: center; gap: 9px; color: #393939; cursor: pointer; }
+    .check input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); }
+    .primary {
+      display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px;
+      padding: 0 16px; border: 0; border-radius: 0; background: var(--blue); color: white; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer;
+      transition: background .15s ease;
+    }
+    .primary:hover { background: var(--blue-hover); }
+    .primary svg { width: 18px; height: 18px; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 26px 0; color: #6f6f6f; font-size: 12px; }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #e0e0e0; }
+    .secondary {
+      width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 10px;
+      border: 1px solid #8d8d8d; border-radius: 0; background: #fff; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .secondary:hover { background: #f4f4f4; }
+    .secondary svg { width: 18px; height: 18px; }
+    .notice { display: none; margin-top: 18px; padding: 12px 14px; border-left: 3px solid var(--blue); background: #edf5ff; color: #0043ce; font-size: 13px; line-height: 1.5; }
+    .notice.visible { display: block; }
+    .create-account { margin: 28px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+    .create-account a { font-weight: 600; }
+    .legal { margin-top: auto; padding-top: 42px; display: flex; justify-content: center; flex-wrap: wrap; gap: 22px; color: #6f6f6f; font-size: 11px; }
+    .legal a { color: #525252; }
+    .recovery { display: none; }
+    .recovery.visible { display: block; }
+    .signin.hidden { display: none; }
+    .back-link { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 18px; font-size: 13px; }
+    .back-link svg { width: 15px; height: 15px; }
+    @media (max-width: 900px) {
+      .page { grid-template-columns: minmax(300px, .82fr) minmax(420px, 1.18fr); }
+      .brand-panel { padding: 30px 32px 24px; }
+      .hero h1 { font-size: 42px; }
+      .form-panel { padding: 40px 38px; }
+    }
+    @media (max-width: 680px) {
+      .page { display: block; }
+      .brand-panel { display: none; }
+      .form-panel { min-height: 100svh; padding: 28px 24px 22px; align-items: stretch; }
+      .mobile-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 54px; }
+      .mobile-brand .brand-mark { width: 32px; height: 32px; }
+      .mobile-brand .brand-name { color: var(--ink); font-size: 20px; }
+      .form-wrap { max-width: 440px; margin: 0 auto; }
+      h2 { font-size: 30px; }
+      .legal { padding-top: 48px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <aside class="brand-panel" aria-label="About Astrion">
+      <a class="brand" href="#" aria-label="Astrion home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 21 20H3L12 3Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9 16 17H8L12 9Z" fill="white" fill-opacity=".9"/></svg></span>
+        <span class="brand-name">astrion</span>
+      </a>
+      <section class="hero">
+        <p class="brand-kicker">Intelligence for better relationships</p>
+        <h1>Turn every signal into a <span>meaningful</span> connection.</h1>
+        <p class="hero-copy">Bring customer context, sales momentum, and AI-powered prospecting into one clear view.</p>
+        <div class="insight">
+          <span class="insight-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 18V6m0 12h16M7 15l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 7H19v3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div><strong>From first signal to lasting growth</strong><span>One connected workspace for your team.</span></div>
+        </div>
+      </section>
+      <footer class="brand-footer"><span>© 2026 Astrion</span><span>Built for thoughtful growth.</span></footer>
+    </aside>
+
+    <section class="form-panel" aria-label="Account access">
+      <a class="brand mobile-brand" href="#" aria-label="Astrion home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 21 20H3L12 3Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9 16 17H8L12 9Z" fill="white" fill-opacity=".9"/></svg></span>
+        <span class="brand-name">astrion</span>
+      </a>
+      <div class="form-wrap">
+        <section class="signin" id="signin-view">
+          <div class="eyebrow">Welcome back</div>
+          <h2>Sign in to Astrion</h2>
+          <p class="intro">Enter your work email and password to access your workspace.</p>
+          <form id="signin-form" novalidate>
+            <div class="field">
+              <label for="email">Work email</label>
+              <input id="email" name="email" type="email" autocomplete="username" placeholder="you@company.com" required>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="input-wrap">
+                <input class="password-input" id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="8">
+                <button class="toggle-password" id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Show</button>
+              </div>
+            </div>
+            <div class="form-options">
+              <label class="check"><input type="checkbox" name="remember"> <span>Keep me signed in</span></label>
+              <a href="#recovery" id="forgot-link">Forgot password?</a>
+            </div>
+            <button class="primary" type="submit"><span>Sign in</span><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h10m-4-4 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </form>
+          <div class="divider"><span>OR</span></div>
+          <button class="secondary" type="button" id="sso-button"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6" stroke="currentColor" stroke-width="1.4"/><rect x="11.5" y="2.5" width="6" height="6" stroke="currentColor" stroke-width="1.4"/><rect x="2.5" y="11.5" width="6" height="6" stroke="currentColor" stroke-width="1.4"/><path d="M11.5 11.5h6v6h-6z" fill="currentColor"/></svg><span>Continue with single sign-on</span></button>
+          <div class="notice" id="signin-notice" role="status" aria-live="polite"></div>
+          <p class="create-account">New to Astrion? <a href="#contact" id="contact-link">Contact your administrator</a></p>
+        </section>
+
+        <section class="recovery" id="recovery-view" aria-labelledby="recovery-title">
+          <a class="back-link" href="#signin" id="back-link"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3m4 4L3 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to sign in</a>
+          <div class="eyebrow">Account recovery</div>
+          <h2 id="recovery-title">Reset your password</h2>
+          <p class="intro">Enter the work email associated with your Astrion account. If recovery is enabled for your workspace, instructions will be sent to that address.</p>
+          <form id="recovery-form" novalidate>
+            <div class="field"><label for="recovery-email">Work email</label><input id="recovery-email" name="email" type="email" autocomplete="email" placeholder="you@company.com" required></div>
+            <button class="primary" type="submit"><span>Request reset link</span><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h10m-4-4 4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </form>
+          <div class="notice" id="recovery-notice" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+      <footer class="legal"><span>© 2026 Astrion</span><a href="#privacy" id="privacy-link">Privacy</a><a href="#terms" id="terms-link">Terms</a><a href="#help" id="help-link">Help</a></footer>
+    </section>
+  </main>
+  <script>
+    // Interaction prototype only. Authentication, SSO, and recovery are not connected to a backend.
+    const password = document.getElementById('password');
+    const toggle = document.getElementById('toggle-password');
+    const signinView = document.getElementById('signin-view');
+    const recoveryView = document.getElementById('recovery-view');
+    const signinNotice = document.getElementById('signin-notice');
+    const recoveryNotice = document.getElementById('recovery-notice');
+
+    toggle.addEventListener('click', () => {
+      const visible = password.type === 'password';
+      password.type = visible ? 'text' : 'password';
+      toggle.textContent = visible ? 'Hide' : 'Show';
+      toggle.setAttribute('aria-pressed', String(visible));
+    });
+
+    document.getElementById('forgot-link').addEventListener('click', (event) => {
+      event.preventDefault();
+      signinView.classList.add('hidden');
+      recoveryView.classList.add('visible');
+      recoveryNotice.classList.remove('visible');
+      document.getElementById('recovery-email').value = document.getElementById('email').value;
+      document.getElementById('recovery-email').focus();
+    });
+    document.getElementById('back-link').addEventListener('click', (event) => {
+      event.preventDefault();
+      recoveryView.classList.remove('visible');
+      signinView.classList.remove('hidden');
+      document.getElementById('email').focus();
+    });
+
+    document.getElementById('signin-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      signinNotice.textContent = 'Design prototype only: authentication is not connected yet. No sign-in request was sent.';
+      signinNotice.classList.add('visible');
+    });
+    document.getElementById('recovery-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      recoveryNotice.textContent = 'Design prototype only: password recovery is not connected yet. No email was sent.';
+      recoveryNotice.classList.add('visible');
+    });
+    document.getElementById('sso-button').addEventListener('click', () => {
+      signinNotice.textContent = 'Single sign-on will be available after your organization identity provider is configured.';
+      signinNotice.classList.add('visible');
+    });
+    ['contact-link', 'privacy-link', 'terms-link', 'help-link'].forEach((id) => {
+      document.getElementById(id).addEventListener('click', (event) => {
+        event.preventDefault();
+        signinNotice.textContent = 'This prototype does not yet have a connected support or policy destination.';
+        signinNotice.classList.add('visible');
+      });
+    });
+  </script>
+</body>
+</html>
