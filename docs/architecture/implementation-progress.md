@@ -199,3 +199,7 @@ This section supersedes earlier high-level prototype-only summaries where later 
 - [x] Add the helper unit-test command to the web CI workflow alongside the Edge Function type-check.
 - [x] Align acquisition volume choices with the server-side ten-result-per-provider limit to avoid misleading 25–250 result selections.
 - [ ] Confirm the new Deno tests and Vite build pass in CI; status APIs currently return no check records for the latest branch commits.
+
+- [x] Inspect Cloudflare Workers Build logs and identify the preview deployment failure: Wrangler reported that the configuration lacked the required `previews` block.
+- [x] Add root `wrangler.jsonc` with `previews`, Vite build command, static asset directory, and SPA fallback; update web deployment documentation.
+- [ ] Verify the next Cloudflare preview build after the Wrangler configuration change. The build result must be checked before declaring deployment fixed.
