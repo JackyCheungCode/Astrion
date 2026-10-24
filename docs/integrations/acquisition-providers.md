@@ -16,7 +16,7 @@ WORKS_API_KEY=
 
 For local development, load secrets with `supabase functions serve acquisition-research --env-file .env.functions`. For a deployed project, use `supabase secrets set --env-file .env.functions` and deploy with `supabase functions deploy acquisition-research`. Set `APP_ORIGIN` to the exact production web origin before deployment.
 
-The Edge Function uses Serper's Google Search endpoint and Tavily's search endpoint from the server. It accepts only authenticated users with an active workspace membership, caps a request at ten results per provider, applies timeouts, and records a minimal audit event. Lead persistence is opt-in and writes candidates to the lead review queue; it does not send outreach.
+The Edge Function uses Serper's Google Search endpoint and Tavily's search endpoint from the server. It accepts only authenticated users with an active workspace membership, validates the selected workspace against that user's active memberships, caps a request at ten results per provider, applies timeouts, and records a minimal audit event. When the user has multiple workspaces, the request must include the selected workspace ID from the Carbon workspace selector. Lead persistence is opt-in and writes candidates to the lead review queue; it does not send outreach.
 
 ## Works API contract
 
@@ -30,8 +30,8 @@ The endpoint should return JSON. Its response is passed back to the authenticate
 
 ## Current limitations
 
-- Search results are evidence candidates, not verified company facts. Review URLs and snippets before qualification.
-- The first release does not perform AI-based ICP scoring, infer missing contact data, or automate email/call outreach.
+- Search results are evidence candidates, not verified company facts. Review URLs and snippets before qualification. The 'traceable source' filter excludes results without a non-empty snippet; it does not independently fetch or verify the publisher's current page.
+- The first release does not perform AI-based ICP/intent scoring, infer missing contact data, or automate email/call outreach. It can optionally show a transparent evidence-completeness heuristic based on source corroboration, title/snippet quality, and Tavily relevance; this is not a trained model and must not be interpreted as purchase intent.
 - Deduplication is a conservative website-match check; use the CRM duplicate-review module for broader matching.
 - The function does not store raw Works responses or personal contact details automatically.
 Initial server-side limits are 20 searches per user and 200 per workspace per rolling hour. Provider-specific spend budgets, retry queues, usage dashboards, and retention cleanup remain to be implemented.
