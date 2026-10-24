@@ -84,6 +84,9 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
       : `${industry} companies in ${region}; company size ${companySize}; ${intent} business signal`);
     setSearching(true);
     setSearchError('');
+    setSearchResults([]);
+    setProviderStatuses([]);
+    setWorksResult(null);
     try {
       const providers = source === 'both' ? ['serper','tavily'] : [source];
       const { data,error } = await supabase.functions.invoke('acquisition-research',{
@@ -95,7 +98,11 @@ export default function AcquisitionPage({ path, navigate, setNotice, notice }) {
       setWorksResult(data?.works||null);
       setNotice(`搜索完成：${data?.results?.length||0} 条网页结果；${data?.persistedCount||0} 条线索已保存至待审核队列。`);
     } catch(error) {
-      setSearchError(error?.message||'搜索请求失败，请检查 Edge Function 部署、登录状态和服务端密钥。');
+      let message=error?.message||'搜索请求失败，请检查 Edge Function 部署、登录状态和服务端密钥。';
+      if(error?.context&&typeof error.context.clone==='function'){
+        try{const payload=await error.context.clone().json();if(payload?.error)message=payload.error;}catch{/* keep the SDK error message */}
+      }
+      setSearchError(message);
     } finally {
       setSearching(false);
     }
