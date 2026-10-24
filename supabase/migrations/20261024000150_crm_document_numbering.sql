@@ -28,7 +28,7 @@ begin
   on conflict(workspace_id,prefix)
   do update set next_value=public.crm_number_counters.next_value+1,updated_at=now()
   returning next_value-1 into v_number;
-  return v_prefix||'-'||lpad(v_number::text,6,'0');
+  return v_prefix||'-'||lpad(v_number::text,greatest(6,length(v_number::text)), '0');
 end;
 $$;
 revoke all on function public.next_crm_number(uuid,text) from public;
